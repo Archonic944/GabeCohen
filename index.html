@@ -5,7 +5,7 @@
     <title>Gabe Cohen - Developer</title>
 </head>
 <body>
-    <video class="banner" autoplay muted><source src="assets/gameoflife_name_banner.webm"></video>
+    <video class="banner" autoplay muted playsinline loop><source src="assets/gameoflife_name_banner.webm"></video>
     <div class="center-matter">
         <h1>Hello.</h1>
         <h2>I'm <strong>Gabe Cohen</strong>, a software developer and musician.</h2>
@@ -126,6 +126,9 @@
     audio {
         margin: 0.2em;
         display: block;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     h1 {
