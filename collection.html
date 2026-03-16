@@ -620,16 +620,28 @@ function buildShelves(count) {
         color: 0x888888, roughness: 0.35, metalness: 0.85,
     });
 
-    // Frosted glass diffuser panel (the glowing part you see)
-    const glowGeo = new THREE.BoxGeometry(stripW - 0.04, 0.03, 0.08);
-    const glowMat = new THREE.MeshStandardMaterial({
-        color: 0xfff8f0,
-        emissive: 0xffe8cc,
-        emissiveIntensity: 2.0,
-        roughness: 0.15,   // frosted glass
+    // Inner light strip (the actual LED, small and bright, hidden behind cover)
+    const ledGeo = new THREE.BoxGeometry(stripW - 0.08, 0.01, 0.03);
+    const ledMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0xffeedd,
+        emissiveIntensity: 3.0,
+        roughness: 0.1,
+        metalness: 0.0,
+    });
+
+    // Translucent plastic diffuser cover that sits over the LED
+    const coverGeo = new THREE.BoxGeometry(stripW - 0.02, 0.035, 0.09);
+    const coverMat = new THREE.MeshPhysicalMaterial({
+        color: 0xf8f0e8,
+        roughness: 0.4,
         metalness: 0.0,
         transparent: true,
-        opacity: 0.92,
+        opacity: 0.55,
+        transmission: 0.3,      // light passes through
+        thickness: 0.02,        // thin plastic shell
+        emissive: 0xffe8cc,
+        emissiveIntensity: 0.4, // faint glow from transmitted light
     });
 
     function addShelfStrip(plankY) {
@@ -638,10 +650,15 @@ function buildShelves(count) {
         housing.position.set(0, plankY - 0.07, 0.35);
         shelfGroup.add(housing);
 
-        // Glowing face on the underside of the housing
-        const glow = new THREE.Mesh(glowGeo, glowMat);
-        glow.position.set(0, plankY - 0.11, 0.35);
-        shelfGroup.add(glow);
+        // LED strip inside the housing
+        const led = new THREE.Mesh(ledGeo, ledMat);
+        led.position.set(0, plankY - 0.095, 0.35);
+        shelfGroup.add(led);
+
+        // Plastic diffuser cover over the LED
+        const cover = new THREE.Mesh(coverGeo, coverMat);
+        cover.position.set(0, plankY - 0.105, 0.35);
+        shelfGroup.add(cover);
 
         // RectAreaLight for actual illumination pointing down
         const areaLight = new THREE.RectAreaLight(0xffe8cc, 4.0, stripW, 0.1);
