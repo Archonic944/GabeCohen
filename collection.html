@@ -155,13 +155,66 @@
         #tooltip .tt-title { color: #fff; font-family: Born2bSportyV2, monospace; letter-spacing: 1px; }
         #tooltip .tt-artist { color: #00ffcc; font-size: 0.9em; margin-top: 2px; }
 
+        /* Intro hero section — shown when scrolled above the shelf */
+        #intro {
+            position: fixed;
+            z-index: 5;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 60px 24px;
+            background: #0a0a12;
+            transition: opacity 0.4s ease;
+            pointer-events: auto;
+        }
+        #intro.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #intro p {
+            max-width: 520px;
+            font-size: 1.05em;
+            line-height: 1.7;
+            color: #c8c0b4;
+            margin-bottom: 28px;
+        }
+        #intro a.inline-link {
+            color: #00ffcc;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+        #intro a.inline-link:hover { color: #33ffdd; }
+        #intro .back-btn {
+            display: inline-block;
+            color: #00ffcc;
+            font-family: BattleNet, monospace;
+            font-size: 0.95em;
+            text-decoration: none;
+            border: 1px solid #00ffcc44;
+            padding: 8px 24px;
+            border-radius: 2px;
+            transition: all 0.2s;
+            cursor: pointer;
+            background: transparent;
+        }
+        #intro .back-btn:hover { background: #00ffcc22; border-color: #00ffcc; }
+
         @media (max-width: 600px) {
             #hud h1 { font-size: 1.1em; }
             #detail-title { font-size: 1.1em; }
+            #intro p { font-size: 0.95em; }
         }
     </style>
 </head>
 <body>
+
+<div id="intro">
+    <p>These are some of the albums/songs that Gabe owns on <a class="inline-link" href="https://bandcamp.com/archonic7" target="_blank" rel="noopener">Bandcamp</a>. Scroll to explore, and click on any one of them to see details.</p>
+    <a class="back-btn" href="index.html">&larr; Back to main site</a>
+</div>
 
 <div id="canvas-container"></div>
 
@@ -238,8 +291,8 @@ let albumMeshes = [];
 let hoveredMesh = null;
 let selectedMesh = null;
 let selectedAlbum = null;
-let scrollOffset = 0;
-let targetScroll = 0;
+let scrollOffset = -3.0;
+let targetScroll = -3.0;
 let isDragging = false;
 let lastPointerY = 0;
 let pointerDownTime = 0;
@@ -509,11 +562,6 @@ const fillLight2 = new THREE.DirectionalLight(0xccbbaa, 0.3);
 fillLight2.position.set(-3, -1, 4);
 scene.add(fillLight2);
 
-// Spotlight that illuminates selected album in detail view (starts off)
-const focusLight = new THREE.PointLight(0xffeedd, 0, 5);
-scene.add(focusLight);
-let focusLightIntensity = 0;
-
 // ── Shelf ───────────────────────────────────────────────────────
 const shelfGroup = new THREE.Group();
 scene.add(shelfGroup);
@@ -625,7 +673,7 @@ function buildShelves(count) {
     const ledMat = new THREE.MeshStandardMaterial({
         color: 0xffffff,
         emissive: 0xffeedd,
-        emissiveIntensity: 5.0,
+        emissiveIntensity: 8.0,
         roughness: 0.1,
         metalness: 0.0,
     });
@@ -641,7 +689,7 @@ function buildShelves(count) {
         transmission: 0.3,      // light passes through
         thickness: 0.02,        // thin plastic shell
         emissive: 0xffe8cc,
-        emissiveIntensity: 0.8, // warm glow from transmitted light
+        emissiveIntensity: 1.2, // warm glow from transmitted light
     });
 
     function addShelfStrip(plankY) {
@@ -661,7 +709,7 @@ function buildShelves(count) {
         shelfGroup.add(cover);
 
         // RectAreaLight for actual illumination pointing down
-        const areaLight = new THREE.RectAreaLight(0xffe8cc, 6.0, stripW, 0.1);
+        const areaLight = new THREE.RectAreaLight(0xffe8cc, 9.0, stripW, 0.1);
         areaLight.position.set(0, plankY - 0.12, 0.35);
         areaLight.lookAt(0, plankY - 2, 0.35);
         shelfGroup.add(areaLight);
@@ -955,11 +1003,13 @@ window.addEventListener('pointerup', e => {
     if (!isDetailView) renderer.domElement.style.cursor = 'default';
 });
 
-renderer.domElement.addEventListener('wheel', e => {
+function onWheel(e) {
     if (isDetailView) return;
     e.preventDefault();
     targetScroll += e.deltaY * 0.004;
-}, { passive: false });
+}
+renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
+document.getElementById('intro').addEventListener('wheel', onWheel, { passive: false });
 
 // Touch scroll
 renderer.domElement.addEventListener('touchstart', e => {
@@ -986,10 +1036,11 @@ renderer.domElement.addEventListener('touchend', () => {
     isDragging = false;
 });
 
+const INTRO_SCROLL = -3.0; // scroll headroom above shelf for intro
 function clampScroll() {
     const rows = Math.ceil(albums.length / ALBUMS_PER_ROW);
     const max = Math.max(0, (rows - 2) * ROW_HEIGHT);
-    targetScroll = Math.max(-0.5, Math.min(targetScroll, max));
+    targetScroll = Math.max(INTRO_SCROLL, Math.min(targetScroll, max));
 }
 
 // ── Detail view (bring record to camera) ────────────────────────
@@ -1112,6 +1163,15 @@ function animate() {
         shelfGroup.position.y = -scrollOffset + 0.5;
     }
 
+    // Show/hide intro based on scroll position
+    const introEl = document.getElementById('intro');
+    if (scrollOffset < -0.8) {
+        introEl.classList.remove('hidden');
+        introEl.style.opacity = Math.min(1, (-scrollOffset - 0.8) / 1.0);
+    } else {
+        introEl.classList.add('hidden');
+    }
+
     // Animate albums
     for (const mesh of albumMeshes) {
         const ud = mesh.userData;
@@ -1139,26 +1199,6 @@ function animate() {
     lookTarget.z = 0;
     camera.lookAt(lookTarget);
 
-    // Focus light only activates in detail view, with a gradual fade
-    if (selectedMesh && isDetailView) {
-        const wp = new THREE.Vector3();
-        selectedMesh.getWorldPosition(wp);
-        // Smoothly move the light position too
-        focusLight.position.x += (wp.x - focusLight.position.x) * 2 * dt;
-        focusLight.position.y += ((wp.y + 0.5) - focusLight.position.y) * 2 * dt;
-        focusLight.position.z += ((wp.z + 1.5) - focusLight.position.z) * 2 * dt;
-        focusLightIntensity = 1.0;
-        if (selectedMesh.userData.keyColor) {
-            const kc = selectedMesh.userData.keyColor;
-            focusLight.color.setRGB(0.8 + kc.r * 0.2, 0.8 + kc.g * 0.2, 0.8 + kc.b * 0.2);
-        } else {
-            focusLight.color.setHex(0xffeedd);
-        }
-    } else {
-        focusLightIntensity = 0;
-    }
-    // Slow fade (1.5 lerp factor = ~0.7s to reach target)
-    focusLight.intensity += (focusLightIntensity - focusLight.intensity) * 1.5 * dt;
 
     // Subtle particle drift
     particles.rotation.y = t * 0.015;
