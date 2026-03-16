@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gabe Cohen - Record Collection</title>
+    <style>
+        @font-face {
+            font-family: 'BattleNet';
+            src: url('assets/battlenet.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: "Born2bSportyV2";
+            src: url("assets/Born2bSportyV2.ttf") format("truetype");
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0a0a12;
+            color: white;
+            font-family: BattleNet, monospace;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            top: 0; left: 0;
+        }
+
+        canvas { display: block; }
+
+        /* CRT scanline overlay */
+        #scanlines {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.12) 0px,
+                rgba(0,0,0,0.12) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+        }
+
+        /* Top HUD */
+        #hud {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 10;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(10,10,18,0.95) 0%, transparent 100%);
+            pointer-events: none;
+        }
+        #hud * { pointer-events: auto; }
+        #hud h1 {
+            font-family: Born2bSportyV2, monospace;
+            font-size: 1.6em;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, #ff00ff, #00ffff, #ff00ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+        @keyframes shimmer { to { background-position: 200% center; } }
+        #hud a {
+            color: #00ffcc;
+            font-size: 0.9em;
+            text-decoration: none;
+            border: 1px solid #00ffcc44;
+            padding: 4px 12px;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+        #hud a:hover { background: #00ffcc22; border-color: #00ffcc; }
+
+        /* Loading */
+        #loading {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #0a0a12;
+            z-index: 100;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            transition: opacity 0.6s;
+        }
+        #loading.hidden { opacity: 0; pointer-events: none; }
+        #loading h2 {
+            font-family: Born2bSportyV2, monospace;
+            font-size: 2em; letter-spacing: 4px;
+            color: #ff00ff; margin-bottom: 20px;
+        }
+        .loader { width: 200px; height: 4px; background: #1a1a2e; border-radius: 2px; overflow: hidden; }
+        .loader-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #ff00ff, #00ffff); transition: width 0.3s; }
+        #load-status { margin-top: 10px; font-size: 0.8em; color: #666; }
+
+        /* Detail overlay */
+        #detail-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 50; display: none;
+            align-items: center; justify-content: center;
+            background: rgba(5, 5, 15, 0.85);
+            backdrop-filter: blur(8px);
+        }
+        #detail-overlay.active { display: flex; }
+
+        #detail-card {
+            background: linear-gradient(135deg, #1a1028, #0d1a2a);
+            border: 1px solid #ff00ff44;
+            border-radius: 4px; padding: 24px;
+            max-width: 500px; width: 90%;
+            position: relative;
+            box-shadow: 0 0 40px #ff00ff22, 0 0 80px #00ffff11;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        #detail-close {
+            position: absolute; top: 10px; right: 14px;
+            background: none; border: none;
+            color: #ff00ff; font-size: 1.6em;
+            cursor: pointer; font-family: monospace; line-height: 1;
+        }
+        #detail-close:hover { color: #00ffff; }
+
+        #detail-art {
+            width: 100%; aspect-ratio: 1;
+            object-fit: cover; border-radius: 2px;
+            border: 1px solid #ffffff11;
+        }
+
+        #detail-title {
+            font-family: Born2bSportyV2, monospace;
+            font-size: 1.4em; margin-top: 14px;
+            color: #fff; letter-spacing: 1px;
+        }
+        #detail-artist { font-size: 1em; color: #00ffcc; margin-top: 4px; }
+
+        #detail-embed-wrap { margin-top: 14px; border-radius: 2px; overflow: hidden; }
+        #detail-embed-wrap iframe { border: 0; width: 100%; height: 120px; }
+
+        #detail-link {
+            display: inline-block; margin-top: 12px;
+            color: #ff00ff; font-size: 0.85em;
+            text-decoration: none;
+            border: 1px solid #ff00ff44;
+            padding: 6px 14px; border-radius: 2px;
+            transition: all 0.2s;
+        }
+        #detail-link:hover { background: #ff00ff22; border-color: #ff00ff; }
+
+        /* Bottom bar */
+        #info-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            z-index: 10; padding: 10px 20px;
+            background: linear-gradient(0deg, rgba(10,10,18,0.95) 0%, transparent 100%);
+            font-size: 0.75em; color: #555; text-align: center;
+            pointer-events: none;
+        }
+        #album-count { color: #00ffcc88; }
+
+        /* Tooltip */
+        #tooltip {
+            position: fixed; z-index: 20;
+            padding: 6px 12px;
+            background: rgba(15,10,30,0.92);
+            border: 1px solid #ff00ff55;
+            border-radius: 2px; font-size: 0.85em;
+            pointer-events: none; display: none;
+            max-width: 280px;
+            box-shadow: 0 0 12px #ff00ff22;
+        }
+        #tooltip .tt-title { color: #fff; font-family: Born2bSportyV2, monospace; letter-spacing: 1px; }
+        #tooltip .tt-artist { color: #00ffcc; font-size: 0.9em; margin-top: 2px; }
+
+        @media (max-width: 600px) {
+            #hud h1 { font-size: 1.1em; }
+            #detail-card { padding: 16px; }
+            #detail-title { font-size: 1.1em; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+<div id="scanlines"></div>
+
+<div id="hud">
+    <h1>RECORD COLLECTION</h1>
+    <a href="index.html">&larr; BACK</a>
+</div>
+
+<div id="info-bar">
+    <span id="album-count"></span> &mdash; scroll to browse &mdash; click to inspect
+</div>
+
+<div id="tooltip">
+    <div class="tt-title"></div>
+    <div class="tt-artist"></div>
+</div>
+
+<div id="loading">
+    <h2>LOADING</h2>
+    <div class="loader"><div class="loader-bar" id="loader-bar"></div></div>
+    <div id="load-status">fetching collection...</div>
+</div>
+
+<div id="detail-overlay" tabindex="-1">
+    <div id="detail-card">
+        <button id="detail-close">&times;</button>
+        <img id="detail-art" src="" alt="Album art">
+        <div id="detail-title"></div>
+        <div id="detail-artist"></div>
+        <div id="detail-embed-wrap"></div>
+        <a id="detail-link" href="#" target="_blank" rel="noopener">View on Bandcamp &rarr;</a>
+    </div>
+</div>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+    }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ── Config ──────────────────────────────────────────────────────
+const BANDCAMP_USER = 'archonic7';
+const ALBUMS_PER_ROW = 6;
+const ALBUM_SIZE = 1.5;
+const ALBUM_GAP = 0.3;
+const SHELF_DEPTH = 0.5;
+const ROW_HEIGHT = 2.3;
+const HOVER_PULL = 0.6;
+const SPINE_WIDTH = 0.10;
+
+// CORS proxies to try in order (for GET requests)
+const PROXIES = [
+    url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+];
+
+// ── State ───────────────────────────────────────────────────────
+let albums = [];
+let totalCount = 0;
+let fanId = null;
+let lastToken = null;
+let albumMeshes = [];
+let hoveredMesh = null;
+let selectedAlbum = null;
+let scrollOffset = 0;
+let targetScroll = 0;
+let isDragging = false;
+let lastPointerY = 0;
+let pointerDownTime = 0;
+let pointerMoved = false;
+
+// ── DOM refs ────────────────────────────────────────────────────
+const container = document.getElementById('canvas-container');
+const loadingEl = document.getElementById('loading');
+const loaderBar = document.getElementById('loader-bar');
+const loadStatus = document.getElementById('load-status');
+const tooltip = document.getElementById('tooltip');
+const detailOverlay = document.getElementById('detail-overlay');
+const albumCountEl = document.getElementById('album-count');
+
+// ── Proxy fetch helper ──────────────────────────────────────────
+async function proxyFetch(url) {
+    for (const mkProxy of PROXIES) {
+        try {
+            const resp = await fetch(mkProxy(url), { signal: AbortSignal.timeout(12000) });
+            if (!resp.ok) continue;
+            const text = await resp.text();
+            if (text.length < 100) continue; // too small = error page
+            return text;
+        } catch { /* try next */ }
+    }
+    throw new Error('All proxies failed');
+}
+
+// ── Art URL builder ─────────────────────────────────────────────
+function artUrl(artId) {
+    if (!artId) return '';
+    return `https://f4.bcbits.com/img/a${artId}_10.jpg`;
+}
+
+// ── Parse collection from data-blob ─────────────────────────────
+function parseDataBlob(html) {
+    // The data-blob attribute value is HTML-entity-encoded JSON
+    const marker = 'data-blob="';
+    const start = html.indexOf(marker);
+    if (start === -1) return null;
+
+    const jsonStart = start + marker.length;
+    // Find matching closing quote — the JSON itself has no unescaped quotes
+    // since they're all &quot; inside the attribute
+    let i = jsonStart;
+    while (i < html.length && html[i] !== '"') i++;
+    const raw = html.substring(jsonStart, i);
+
+    // Decode HTML entities
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = raw;
+    const decoded = textarea.value;
+
+    return JSON.parse(decoded);
+}
+
+function extractAlbumsFromBlob(blob) {
+    const results = [];
+    const cache = blob.item_cache?.collection || {};
+
+    for (const [key, it] of Object.entries(cache)) {
+        const itemType = it.tralbum_type || (key.startsWith('t') ? 't' : 'a');
+        results.push({
+            title: it.item_title || 'Untitled',
+            artist: it.band_name || 'Unknown',
+            artUrl: artUrl(it.item_art_id),
+            bandcampUrl: it.item_url || '#',
+            tralbumType: itemType,
+            tralbumId: it.tralbum_id || it.item_id,
+        });
+    }
+
+    // Maintain the order from sequence if available
+    const seq = blob.collection_data?.sequence || [];
+    if (seq.length > 0) {
+        const byKey = {};
+        for (const [key, it] of Object.entries(cache)) byKey[key] = it;
+        const ordered = [];
+        const added = new Set();
+        for (const key of seq) {
+            if (byKey[key]) {
+                const it = byKey[key];
+                const itemType = it.tralbum_type || (key.startsWith('t') ? 't' : 'a');
+                ordered.push({
+                    title: it.item_title || 'Untitled',
+                    artist: it.band_name || 'Unknown',
+                    artUrl: artUrl(it.item_art_id),
+                    bandcampUrl: it.item_url || '#',
+                    tralbumType: itemType,
+                    tralbumId: it.tralbum_id || it.item_id,
+                });
+                added.add(key);
+            }
+        }
+        // Add any remaining
+        for (const r of results) {
+            if (!added.has(r.bandcampUrl)) ordered.push(r);
+        }
+        return ordered.length > 0 ? ordered : results;
+    }
+
+    return results;
+}
+
+// ── Fetch paginated items via API ───────────────────────────────
+async function fetchMoreItems(fanIdVal, token, count = 40) {
+    const body = JSON.stringify({
+        fan_id: fanIdVal,
+        older_than_token: token,
+        count
+    });
+
+    // Try direct first (might work if same-origin or CORS allowed)
+    const apiUrl = 'https://bandcamp.com/api/fancollection/1/collection_items';
+
+    // Attempt via multiple proxy strategies
+    const strategies = [
+        // Direct fetch (will work if no CORS issue)
+        async () => {
+            const r = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body,
+                signal: AbortSignal.timeout(8000)
+            });
+            return r.json();
+        },
+        // allorigins GET with encoded body (won't forward POST but let's try the URL trick)
+        async () => {
+            // Encode the POST data as a GET param workaround via allorigins raw endpoint
+            // This won't work for POST APIs, so skip
+            throw new Error('skip');
+        }
+    ];
+
+    for (const strat of strategies) {
+        try {
+            const data = await strat();
+            if (data.items && data.items.length > 0) return data;
+        } catch { /* next */ }
+    }
+
+    return null;
+}
+
+// ── Main fetch ──────────────────────────────────────────────────
+async function fetchCollection() {
+    loadStatus.textContent = 'fetching collection...';
+    loaderBar.style.width = '15%';
+
+    const html = await proxyFetch(`https://bandcamp.com/${BANDCAMP_USER}`);
+
+    loaderBar.style.width = '35%';
+    loadStatus.textContent = 'parsing collection data...';
+
+    let blob;
+    try {
+        blob = parseDataBlob(html);
+    } catch (e) {
+        console.error('Failed to parse data-blob:', e);
+    }
+
+    if (blob) {
+        fanId = blob.fan_data?.fan_id;
+        lastToken = blob.collection_data?.last_token;
+        totalCount = blob.collection_data?.item_count || 0;
+        albums = extractAlbumsFromBlob(blob);
+        console.log(`Parsed ${albums.length} albums from initial page (total: ${totalCount})`);
+    }
+
+    // Fallback: parse HTML DOM if blob parsing failed
+    if (albums.length === 0) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const items = doc.querySelectorAll('li');
+        items.forEach(li => {
+            const img = li.querySelector('img');
+            if (!img) return;
+            const src = img.getAttribute('src') || img.getAttribute('data-src') || '';
+            if (!src.includes('bcbits')) return;
+            const links = li.querySelectorAll('a');
+            let bcLink = '', title = '';
+            links.forEach(a => {
+                const href = a.getAttribute('href') || '';
+                if (href.includes('bandcamp.com')) {
+                    bcLink = href;
+                    if (!title) title = a.textContent.trim();
+                }
+            });
+            const text = li.textContent;
+            const byMatch = text.match(/by\s+(.+?)(?:\n|$)/i);
+            albums.push({
+                title: title || 'Untitled',
+                artist: byMatch ? byMatch[1].trim() : 'Unknown',
+                artUrl: src.replace(/_\d+\./, '_10.'),
+                bandcampUrl: bcLink.startsWith('http') ? bcLink : ('https://' + bcLink),
+                tralbumType: null,
+                tralbumId: null,
+            });
+        });
+    }
+
+    loaderBar.style.width = '45%';
+
+    // Try to fetch remaining pages
+    if (fanId && lastToken && albums.length < totalCount) {
+        loadStatus.textContent = `loading more albums (${albums.length}/${totalCount})...`;
+        let token = lastToken;
+        let attempts = 0;
+        const maxAttempts = 15; // safety limit
+        while (albums.length < totalCount && token && attempts < maxAttempts) {
+            attempts++;
+            const data = await fetchMoreItems(fanId, token, 100);
+            if (!data || !data.items || data.items.length === 0) break;
+
+            for (const it of data.items) {
+                albums.push({
+                    title: it.item_title || 'Untitled',
+                    artist: it.band_name || 'Unknown',
+                    artUrl: artUrl(it.item_art_id),
+                    bandcampUrl: it.item_url || '#',
+                    tralbumType: it.tralbum_type,
+                    tralbumId: it.tralbum_id,
+                });
+            }
+
+            token = data.more_available ? data.last_token : null;
+            const pct = 45 + (albums.length / totalCount) * 20;
+            loaderBar.style.width = pct + '%';
+            loadStatus.textContent = `loading more albums (${albums.length}/${totalCount})...`;
+        }
+    }
+
+    // Deduplicate
+    const seen = new Set();
+    albums = albums.filter(a => {
+        const key = a.bandcampUrl + a.title;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
+    const suffix = totalCount > albums.length ? ` of ${totalCount}` : '';
+    albumCountEl.textContent = `${albums.length}${suffix} albums`;
+    loaderBar.style.width = '65%';
+    loadStatus.textContent = `loaded ${albums.length} albums, building scene...`;
+}
+
+// ── Three.js setup ──────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x0a0a12, 0.045);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 1.8, 7);
+camera.lookAt(0, 1.5, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x0a0a12);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+container.appendChild(renderer.domElement);
+
+// Lights
+scene.add(new THREE.AmbientLight(0x332244, 1.2));
+const mainLight = new THREE.DirectionalLight(0xffeedd, 0.6);
+mainLight.position.set(3, 6, 5);
+scene.add(mainLight);
+
+const neonPink = new THREE.PointLight(0xff00ff, 2.5, 18);
+neonPink.position.set(-6, 4, 4);
+scene.add(neonPink);
+
+const neonCyan = new THREE.PointLight(0x00ffff, 2.5, 18);
+neonCyan.position.set(6, 1, 5);
+scene.add(neonCyan);
+
+const underglow = new THREE.PointLight(0x00ff88, 0.4, 8);
+underglow.position.set(0, -1, 3);
+scene.add(underglow);
+
+// ── Shelf ───────────────────────────────────────────────────────
+const shelfGroup = new THREE.Group();
+scene.add(shelfGroup);
+
+const textureLoader = new THREE.TextureLoader();
+textureLoader.crossOrigin = 'anonymous';
+
+const shelfMat = new THREE.MeshStandardMaterial({ color: 0x180a2e, roughness: 0.65, metalness: 0.35 });
+
+function buildShelves(count) {
+    const rows = Math.ceil(count / ALBUMS_PER_ROW);
+    const totalW = ALBUMS_PER_ROW * (ALBUM_SIZE + ALBUM_GAP) + ALBUM_GAP;
+
+    for (let r = 0; r < rows; r++) {
+        const y = r * ROW_HEIGHT;
+
+        // Plank
+        const plank = new THREE.Mesh(new THREE.BoxGeometry(totalW + 0.5, 0.07, SHELF_DEPTH + 0.25), shelfMat);
+        plank.position.set(0, y - 0.035, 0);
+        shelfGroup.add(plank);
+
+        // Back wall
+        const backMat = new THREE.MeshStandardMaterial({ color: 0x0c0418, roughness: 0.95, metalness: 0.05 });
+        const back = new THREE.Mesh(new THREE.BoxGeometry(totalW + 0.5, ROW_HEIGHT - 0.07, 0.04), backMat);
+        back.position.set(0, y + ROW_HEIGHT / 2, -SHELF_DEPTH / 2 - 0.08);
+        shelfGroup.add(back);
+
+        // Neon edge strip
+        const color = r % 3 === 0 ? 0xff00ff : r % 3 === 1 ? 0x00ffff : 0xffff00;
+        const strip = new THREE.Mesh(
+            new THREE.BoxGeometry(totalW + 0.3, 0.012, 0.012),
+            new THREE.MeshBasicMaterial({ color })
+        );
+        strip.position.set(0, y + 0.008, SHELF_DEPTH / 2 + 0.06);
+        shelfGroup.add(strip);
+
+        const sl = new THREE.PointLight(color, 0.25, 2.5);
+        sl.position.copy(strip.position);
+        shelfGroup.add(sl);
+    }
+
+    // Side panels
+    const h = rows * ROW_HEIGHT + 0.4;
+    for (const s of [-1, 1]) {
+        const p = new THREE.Mesh(new THREE.BoxGeometry(0.07, h, SHELF_DEPTH + 0.25), shelfMat);
+        p.position.set(s * (totalW / 2 + 0.28), h / 2 - 0.2, 0);
+        shelfGroup.add(p);
+    }
+}
+
+// ── Album placeholder texture ───────────────────────────────────
+const phCanvas = document.createElement('canvas');
+phCanvas.width = 64; phCanvas.height = 64;
+const phCtx = phCanvas.getContext('2d');
+phCtx.fillStyle = '#1a0a2e'; phCtx.fillRect(0, 0, 64, 64);
+phCtx.strokeStyle = '#ff00ff33'; phCtx.lineWidth = 2;
+phCtx.strokeRect(6, 6, 52, 52);
+const placeholderTex = new THREE.CanvasTexture(phCanvas);
+
+// ── Create one album mesh ───────────────────────────────────────
+function createAlbumMesh(album, index) {
+    const row = Math.floor(index / ALBUMS_PER_ROW);
+    const col = index % ALBUMS_PER_ROW;
+    const totalW = ALBUMS_PER_ROW * (ALBUM_SIZE + ALBUM_GAP);
+    const x = col * (ALBUM_SIZE + ALBUM_GAP) - totalW / 2 + ALBUM_SIZE / 2 + ALBUM_GAP / 2;
+    const y = row * ROW_HEIGHT + ALBUM_SIZE / 2 + 0.07;
+
+    const group = new THREE.Group();
+    group.position.set(x, y, 0);
+
+    // Front
+    const frontMat = new THREE.MeshStandardMaterial({
+        map: placeholderTex.clone(), roughness: 0.45, metalness: 0.05,
+    });
+    const front = new THREE.Mesh(new THREE.PlaneGeometry(ALBUM_SIZE, ALBUM_SIZE), frontMat);
+    front.position.z = SPINE_WIDTH / 2;
+    group.add(front);
+
+    // Back
+    const backMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.1 });
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(ALBUM_SIZE, ALBUM_SIZE), backMat);
+    back.rotation.y = Math.PI;
+    back.position.z = -SPINE_WIDTH / 2;
+    group.add(back);
+
+    // Edges
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.6, metalness: 0.2 });
+    const makeEdge = (w, h, d, px, py) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), edgeMat);
+        m.position.set(px, py, 0);
+        group.add(m);
+    };
+    makeEdge(ALBUM_SIZE, 0.018, SPINE_WIDTH, 0, ALBUM_SIZE / 2);   // top
+    makeEdge(ALBUM_SIZE, 0.018, SPINE_WIDTH, 0, -ALBUM_SIZE / 2);  // bottom
+    makeEdge(0.018, ALBUM_SIZE, SPINE_WIDTH, -ALBUM_SIZE / 2, 0);  // left
+    makeEdge(0.018, ALBUM_SIZE, SPINE_WIDTH, ALBUM_SIZE / 2, 0);   // right
+
+    group.userData = {
+        album, index,
+        basePos: group.position.clone(),
+        targetZ: 0, currentZ: 0,
+        hovered: false,
+    };
+
+    shelfGroup.add(group);
+    albumMeshes.push(group);
+
+    // Load art texture
+    if (album.artUrl) {
+        textureLoader.load(album.artUrl, tex => {
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            frontMat.map = tex;
+            frontMat.needsUpdate = true;
+            backMat.map = tex;
+            backMat.color.set(0x333333);
+            backMat.needsUpdate = true;
+        }, undefined, () => {});
+    }
+
+    return group;
+}
+
+// ── Raycasting ──────────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2(-999, -999);
+
+function updatePointer(e) {
+    pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+}
+
+function getHoveredAlbum() {
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(shelfGroup.children, true);
+    for (const h of hits) {
+        let obj = h.object;
+        while (obj.parent && obj.parent !== shelfGroup) obj = obj.parent;
+        if (obj.userData?.album) return obj;
+    }
+    return null;
+}
+
+// ── Events ──────────────────────────────────────────────────────
+renderer.domElement.addEventListener('pointermove', e => {
+    updatePointer(e);
+    if (isDragging) {
+        pointerMoved = true;
+        const dy = e.clientY - lastPointerY;
+        targetScroll -= dy * 0.012;
+        lastPointerY = e.clientY;
+    }
+
+    const hit = getHoveredAlbum();
+    if (hoveredMesh && hoveredMesh !== hit) {
+        hoveredMesh.userData.hovered = false;
+        hoveredMesh.userData.targetZ = 0;
+    }
+    hoveredMesh = hit;
+    if (hit && !selectedAlbum) {
+        hit.userData.hovered = true;
+        hit.userData.targetZ = HOVER_PULL;
+        renderer.domElement.style.cursor = 'pointer';
+        tooltip.style.display = 'block';
+        tooltip.style.left = Math.min(e.clientX + 14, window.innerWidth - 290) + 'px';
+        tooltip.style.top = e.clientY + 14 + 'px';
+        tooltip.querySelector('.tt-title').textContent = hit.userData.album.title;
+        tooltip.querySelector('.tt-artist').textContent = hit.userData.album.artist;
+    } else {
+        renderer.domElement.style.cursor = isDragging ? 'grabbing' : 'default';
+        tooltip.style.display = 'none';
+    }
+});
+
+renderer.domElement.addEventListener('pointerdown', e => {
+    isDragging = true;
+    pointerMoved = false;
+    pointerDownTime = Date.now();
+    lastPointerY = e.clientY;
+    renderer.domElement.style.cursor = 'grabbing';
+});
+
+window.addEventListener('pointerup', e => {
+    const elapsed = Date.now() - pointerDownTime;
+    if (isDragging && !pointerMoved && elapsed < 300) {
+        updatePointer(e);
+        const hit = getHoveredAlbum();
+        if (hit) openDetail(hit.userData.album);
+    }
+    isDragging = false;
+    renderer.domElement.style.cursor = 'default';
+});
+
+renderer.domElement.addEventListener('wheel', e => {
+    e.preventDefault();
+    targetScroll += e.deltaY * 0.004;
+}, { passive: false });
+
+// Touch scroll
+renderer.domElement.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+        isDragging = true;
+        pointerMoved = false;
+        pointerDownTime = Date.now();
+        lastPointerY = e.touches[0].clientY;
+    }
+}, { passive: true });
+
+renderer.domElement.addEventListener('touchmove', e => {
+    if (isDragging && e.touches.length === 1) {
+        pointerMoved = true;
+        const dy = e.touches[0].clientY - lastPointerY;
+        targetScroll -= dy * 0.012;
+        lastPointerY = e.touches[0].clientY;
+    }
+}, { passive: true });
+
+renderer.domElement.addEventListener('touchend', e => {
+    isDragging = false;
+});
+
+function clampScroll() {
+    const rows = Math.ceil(albums.length / ALBUMS_PER_ROW);
+    const max = Math.max(0, (rows - 2) * ROW_HEIGHT);
+    targetScroll = Math.max(-0.5, Math.min(targetScroll, max));
+}
+
+// ── Detail view ─────────────────────────────────────────────────
+function openDetail(album) {
+    selectedAlbum = album;
+    document.getElementById('detail-art').src = album.artUrl || '';
+    document.getElementById('detail-title').textContent = album.title;
+    document.getElementById('detail-artist').textContent = album.artist;
+    document.getElementById('detail-link').href = album.bandcampUrl;
+
+    const embedWrap = document.getElementById('detail-embed-wrap');
+    let embedSrc = '';
+
+    if (album.tralbumType && album.tralbumId) {
+        // Use numeric ID embed (most reliable)
+        const typeKey = album.tralbumType === 'a' ? 'album' : 'track';
+        embedSrc = `https://bandcamp.com/EmbeddedPlayer/${typeKey}=${album.tralbumId}/size=large/bgcol=0a0a12/linkcol=00ffcc/tracklist=false/artwork=none/transparent=true/`;
+    } else if (album.bandcampUrl && album.bandcampUrl !== '#') {
+        // Fallback: use url= parameter
+        let url = album.bandcampUrl;
+        if (!url.startsWith('http')) url = 'https://' + url;
+        embedSrc = `https://bandcamp.com/EmbeddedPlayer/url=${url}/size=large/bgcol=0a0a12/linkcol=00ffcc/tracklist=false/artwork=none/transparent=true/`;
+    }
+
+    if (embedSrc) {
+        embedWrap.innerHTML = `<iframe src="${embedSrc}" seamless loading="lazy" title="Bandcamp player"></iframe>`;
+    } else {
+        embedWrap.innerHTML = '<p style="color:#555;font-size:0.85em;">Player unavailable</p>';
+    }
+
+    detailOverlay.classList.add('active');
+    tooltip.style.display = 'none';
+}
+
+function closeDetail() {
+    selectedAlbum = null;
+    detailOverlay.classList.remove('active');
+    document.getElementById('detail-embed-wrap').innerHTML = '';
+}
+
+document.getElementById('detail-close').addEventListener('click', closeDetail);
+detailOverlay.addEventListener('click', e => { if (e.target === detailOverlay) closeDetail(); });
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && selectedAlbum) closeDetail(); });
+
+// ── Background particles ────────────────────────────────────────
+function createParticles() {
+    const n = 150;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+        pos[i*3] = (Math.random()-0.5)*30;
+        pos[i*3+1] = (Math.random()-0.5)*30;
+        pos[i*3+2] = (Math.random()-0.5)*15 - 4;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({ color: 0xff44ff, size: 0.025, transparent: true, opacity: 0.35, sizeAttenuation: true });
+    const pts = new THREE.Points(geo, mat);
+    scene.add(pts);
+    return pts;
+}
+const particles = createParticles();
+
+// Floor grid
+const gridMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(40, 40, 40, 40),
+    new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true, transparent: true, opacity: 0.035 })
+);
+gridMesh.rotation.x = -Math.PI / 2;
+gridMesh.position.y = -0.5;
+scene.add(gridMesh);
+
+// ── Animate ─────────────────────────────────────────────────────
+const clock = new THREE.Clock();
+
+function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.05);
+    const t = clock.getElapsedTime();
+
+    clampScroll();
+    scrollOffset += (targetScroll - scrollOffset) * 5 * dt;
+    shelfGroup.position.y = -scrollOffset + 0.5;
+
+    for (const mesh of albumMeshes) {
+        const ud = mesh.userData;
+        ud.currentZ += (ud.targetZ - ud.currentZ) * 8 * dt;
+        mesh.position.z = ud.basePos.z + ud.currentZ;
+
+        const targetRot = ud.hovered ? 0.15 : 0;
+        mesh.rotation.y += (targetRot - mesh.rotation.y) * 7 * dt;
+    }
+
+    particles.rotation.y = t * 0.015;
+    particles.position.y = Math.sin(t * 0.25) * 0.15;
+
+    neonPink.intensity = 2.5 + Math.sin(t * 1.3) * 0.6;
+    neonCyan.intensity = 2.5 + Math.cos(t * 1.0) * 0.6;
+
+    camera.position.y = 1.8 + Math.sin(t * 0.4) * 0.04;
+
+    renderer.render(scene, camera);
+}
+
+// ── Resize ──────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ── Init ────────────────────────────────────────────────────────
+async function init() {
+    try {
+        await fetchCollection();
+    } catch (err) {
+        console.error('Failed to fetch collection:', err);
+        loadStatus.textContent = 'failed to load collection - check console';
+        return;
+    }
+
+    if (albums.length === 0) {
+        loadStatus.textContent = 'no albums found';
+        return;
+    }
+
+    loaderBar.style.width = '75%';
+    loadStatus.textContent = 'building shelves...';
+
+    buildShelves(albums.length);
+
+    for (let i = 0; i < albums.length; i++) {
+        createAlbumMesh(albums[i], i);
+        loaderBar.style.width = (75 + (i / albums.length) * 25) + '%';
+    }
+
+    loaderBar.style.width = '100%';
+    loadStatus.textContent = 'ready!';
+
+    setTimeout(() => loadingEl.classList.add('hidden'), 400);
+    animate();
+}
+
+init();
+</script>
+
+</body>
+</html>
