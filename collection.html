@@ -729,7 +729,7 @@ function createAlbumMesh(album, index) {
     shelfGroup.add(group);
     albumMeshes.push(group);
 
-    // Load art texture via Image element to handle CORS
+    // Load art texture via proxy to avoid CORS blocking from Bandcamp CDN
     if (album.artUrl) {
         const img = new Image();
         img.crossOrigin = 'anonymous';
@@ -742,7 +742,7 @@ function createAlbumMesh(album, index) {
             frontMat.map = tex;
             frontMat.needsUpdate = true;
         };
-        img.src = album.artUrl;
+        img.src = `/img-proxy?url=${encodeURIComponent(album.artUrl)}`;
     }
 
     // Add a warm point light between records (every other one)
