@@ -729,15 +729,20 @@ function createAlbumMesh(album, index) {
     shelfGroup.add(group);
     albumMeshes.push(group);
 
-    // Load art texture
+    // Load art texture via Image element to handle CORS
     if (album.artUrl) {
-        textureLoader.load(album.artUrl, tex => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            const tex = new THREE.Texture(img);
             tex.colorSpace = THREE.SRGBColorSpace;
             tex.minFilter = THREE.LinearFilter;
             tex.magFilter = THREE.LinearFilter;
+            tex.needsUpdate = true;
             frontMat.map = tex;
             frontMat.needsUpdate = true;
-        }, undefined, () => {});
+        };
+        img.src = album.artUrl;
     }
 
     // Add a warm point light between records (every other one)
@@ -881,13 +886,17 @@ function openDetail(mesh) {
     mesh.userData.targetRotY = 0;
 
     // Move camera to focus on this record
+    // getWorldPosition already includes shelfGroup transform
     const worldPos = new THREE.Vector3();
     mesh.getWorldPosition(worldPos);
+    // Camera should be at the record's world Y, and Z in front of where
+    // the record will end up after pulling out (baseZ + FULL_PULL)
+    const targetWorldZ = worldPos.z + FULL_PULL;
     cameraTarget = {
-        x: worldPos.x * 0.5,
-        y: worldPos.y + shelfGroup.position.y,
-        z: worldPos.z + FULL_PULL + 3.0,
-        lookY: worldPos.y + shelfGroup.position.y,
+        x: worldPos.x * 0.3,
+        y: worldPos.y,
+        z: targetWorldZ + 2.8,
+        lookY: worldPos.y,
     };
 
     // Show info overlay
