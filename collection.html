@@ -34,22 +34,6 @@
 
         canvas { display: block; }
 
-        /* CRT scanline overlay */
-        #scanlines {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 5;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0,0,0,0.12) 0px,
-                rgba(0,0,0,0.12) 1px,
-                transparent 1px,
-                transparent 3px
-            );
-        }
-
         /* Top HUD */
         #hud {
             position: fixed;
@@ -180,7 +164,6 @@
 <body>
 
 <div id="canvas-container"></div>
-<div id="scanlines"></div>
 
 <div id="hud">
     <h1>RECORD COLLECTION</h1>
@@ -259,6 +242,7 @@ let isDragging = false;
 let lastPointerY = 0;
 let pointerDownTime = 0;
 let pointerMoved = false;
+let pointerScreenX = 0, pointerScreenY = 0; // raw screen coords for tilt
 
 // Camera animation state
 const cameraDefaults = { x: 0, y: 1.8, z: 7, lookY: 1.5 };
@@ -532,6 +516,11 @@ scene.add(neonCyan);
 const underglow = new THREE.PointLight(0xffaa55, 0.5, 10);
 underglow.position.set(0, -1, 3);
 scene.add(underglow);
+
+// Spotlight that follows the focused album
+const focusLight = new THREE.PointLight(0xffeedd, 0, 4);
+scene.add(focusLight);
+let focusLightIntensity = 0; // target intensity for smooth fade
 
 // ── Shelf ───────────────────────────────────────────────────────
 const shelfGroup = new THREE.Group();
@@ -834,7 +823,17 @@ renderer.domElement.addEventListener('pointermove', e => {
         lastPointerY = e.clientY;
     }
 
+    pointerScreenX = e.clientX;
+    pointerScreenY = e.clientY;
+
     if (isDetailView) {
+        // Tilt selected album toward cursor
+        if (selectedMesh) {
+            const nx = (e.clientX / window.innerWidth) * 2 - 1;
+            const ny = -((e.clientY / window.innerHeight) * 2 - 1);
+            selectedMesh.userData.targetRotY = nx * 0.18;
+            selectedMesh.userData.targetRotX = -ny * 0.12;
+        }
         renderer.domElement.style.cursor = 'default';
         tooltip.style.display = 'none';
         return;
@@ -845,12 +844,17 @@ renderer.domElement.addEventListener('pointermove', e => {
         hoveredMesh.userData.hovered = false;
         hoveredMesh.userData.targetZ = 0;
         hoveredMesh.userData.targetRotX = hoveredMesh.userData.baseRotX;
+        hoveredMesh.userData.targetRotY = 0;
     }
     hoveredMesh = hit;
     if (hit && !isDetailView) {
         hit.userData.hovered = true;
         hit.userData.targetZ = HOVER_PULL;
-        hit.userData.targetRotX = -LEAN_ANGLE * 0.3; // straighten up slightly
+        // Tilt toward cursor based on pointer position relative to screen center
+        const nx = (e.clientX / window.innerWidth) * 2 - 1;
+        const ny = -((e.clientY / window.innerHeight) * 2 - 1);
+        hit.userData.targetRotX = -LEAN_ANGLE * 0.3 + (-ny * 0.08);
+        hit.userData.targetRotY = nx * 0.12;
         renderer.domElement.style.cursor = 'pointer';
         tooltip.style.display = 'block';
         tooltip.style.left = Math.min(e.clientX + 14, window.innerWidth - 290) + 'px';
@@ -1066,6 +1070,30 @@ function animate() {
     lookTarget.y += (cameraTarget.lookY - lookTarget.y) * camSpeed;
     lookTarget.z = 0;
     camera.lookAt(lookTarget);
+
+    // Focus light follows hovered or selected album
+    const focusTarget = selectedMesh || hoveredMesh;
+    if (focusTarget) {
+        const wp = new THREE.Vector3();
+        focusTarget.getWorldPosition(wp);
+        focusLight.position.set(wp.x, wp.y + 0.3, wp.z + 1.2);
+        focusLightIntensity = selectedMesh ? 2.5 : 1.8;
+        // Tint the light with the album's key color if available
+        if (focusTarget.userData.keyColor) {
+            const kc = focusTarget.userData.keyColor;
+            // Blend toward white so it's a soft warm tint, not fully saturated
+            focusLight.color.setRGB(
+                0.7 + kc.r * 0.3,
+                0.7 + kc.g * 0.3,
+                0.7 + kc.b * 0.3,
+            );
+        } else {
+            focusLight.color.setHex(0xffeedd);
+        }
+    } else {
+        focusLightIntensity = 0;
+    }
+    focusLight.intensity += (focusLightIntensity - focusLight.intensity) * 5 * dt;
 
     // Subtle light pulsing
     particles.rotation.y = t * 0.015;
