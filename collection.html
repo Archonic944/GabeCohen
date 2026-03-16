@@ -781,10 +781,12 @@ function createAlbumMesh(album, index) {
     const sleeveGeo = new THREE.BoxGeometry(coverSize, coverSize, SPINE_WIDTH);
 
     // Cardboard / matte printed sleeve material
-    const frontMat = new THREE.MeshStandardMaterial({
+    const frontMat = new THREE.MeshPhysicalMaterial({
         map: placeholderTex.clone(),
-        roughness: 0.55,   // matte printed cardboard
+        roughness: 0.35,
         metalness: 0.0,
+        clearcoat: 0.8,
+        clearcoatRoughness: 0.15,
     });
     // Spine & back — worn cardboard look
     const edgeMat = new THREE.MeshStandardMaterial({
@@ -808,84 +810,6 @@ function createAlbumMesh(album, index) {
         backMat,   // back
     ]);
     group.add(sleeve);
-
-    // ── Vinyl record peeking out the top of the sleeve ─────────
-    const discRadius = coverSize * 0.48;
-    const discGeo = new THREE.CylinderGeometry(discRadius, discRadius, 0.012, 64);
-    const discMat = new THREE.MeshPhysicalMaterial({
-        color: 0x0a0a0a,
-        roughness: 0.25,
-        metalness: 0.15,
-        clearcoat: 0.6,
-        clearcoatRoughness: 0.15,
-        reflectivity: 0.8,
-    });
-    const disc = new THREE.Mesh(discGeo, discMat);
-    // Peeking ~20% out the top of the sleeve
-    disc.position.set(0, coverSize * 0.2, 0);
-    disc.rotation.x = 0; // flat disc
-    group.add(disc);
-
-    // Vinyl label (center circle with color from album art)
-    const labelRadius = discRadius * 0.33;
-    const labelGeo = new THREE.CylinderGeometry(labelRadius, labelRadius, 0.014, 32);
-    const labelMat = new THREE.MeshStandardMaterial({
-        color: 0x1a1a2e,
-        roughness: 0.6,
-        metalness: 0.0,
-    });
-    const label = new THREE.Mesh(labelGeo, labelMat);
-    label.position.copy(disc.position);
-    group.add(label);
-    group.userData._labelMat = labelMat;
-    group.userData._discMat = discMat;
-
-    // Procedural groove normal map for realistic vinyl micro-detail
-    const grooveSize = 256;
-    const grooveCanvas = document.createElement('canvas');
-    grooveCanvas.width = grooveSize;
-    grooveCanvas.height = grooveSize;
-    const gCtx = grooveCanvas.getContext('2d');
-    // Base neutral normal (pointing up)
-    gCtx.fillStyle = '#8080ff';
-    gCtx.fillRect(0, 0, grooveSize, grooveSize);
-    // Concentric grooves
-    const cx = grooveSize / 2, cy = grooveSize / 2;
-    for (let r = 20; r < grooveSize / 2; r += 2) {
-        const brightness = (r % 4 === 0) ? 100 : 140;
-        gCtx.beginPath();
-        gCtx.arc(cx, cy, r, 0, Math.PI * 2);
-        gCtx.strokeStyle = `rgb(128, ${brightness}, 255)`;
-        gCtx.lineWidth = 0.8;
-        gCtx.stroke();
-    }
-    // Random scuffs / imperfections — light scratches across the surface
-    for (let i = 0; i < 8; i++) {
-        const sx = Math.random() * grooveSize;
-        const sy = Math.random() * grooveSize;
-        const angle = Math.random() * Math.PI;
-        const len = 30 + Math.random() * 80;
-        gCtx.beginPath();
-        gCtx.moveTo(sx, sy);
-        gCtx.lineTo(sx + Math.cos(angle) * len, sy + Math.sin(angle) * len);
-        gCtx.strokeStyle = `rgba(180, 128, 255, ${0.3 + Math.random() * 0.4})`;
-        gCtx.lineWidth = 0.5 + Math.random() * 1.0;
-        gCtx.stroke();
-    }
-    // A couple of fingerprint-like smudge marks
-    for (let i = 0; i < 3; i++) {
-        const fx = 40 + Math.random() * (grooveSize - 80);
-        const fy = 40 + Math.random() * (grooveSize - 80);
-        gCtx.beginPath();
-        gCtx.arc(fx, fy, 8 + Math.random() * 15, 0, Math.PI * 2);
-        gCtx.fillStyle = `rgba(140, 128, 255, ${0.15 + Math.random() * 0.2})`;
-        gCtx.fill();
-    }
-    const grooveTex = new THREE.CanvasTexture(grooveCanvas);
-    grooveTex.wrapS = grooveTex.wrapT = THREE.RepeatWrapping;
-    discMat.normalMap = grooveTex;
-    discMat.normalScale = new THREE.Vector2(0.6, 0.6);
-    discMat.needsUpdate = true;
 
     group.userData = {
         album, index,
@@ -922,11 +846,6 @@ function createAlbumMesh(album, index) {
             backMat.color.copy(darkened);
             backMat.needsUpdate = true;
             group.userData.keyColor = keyColor;
-            // Tint the vinyl label with the album's key color
-            if (group.userData._labelMat) {
-                group.userData._labelMat.color.copy(darkened);
-                group.userData._labelMat.needsUpdate = true;
-            }
         };
         img.src = `/img-proxy?url=${encodeURIComponent(album.artUrl)}`;
     }
