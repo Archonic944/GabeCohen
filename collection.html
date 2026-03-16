@@ -625,7 +625,7 @@ function buildShelves(count) {
     const ledMat = new THREE.MeshStandardMaterial({
         color: 0xffffff,
         emissive: 0xffeedd,
-        emissiveIntensity: 3.0,
+        emissiveIntensity: 5.0,
         roughness: 0.1,
         metalness: 0.0,
     });
@@ -641,7 +641,7 @@ function buildShelves(count) {
         transmission: 0.3,      // light passes through
         thickness: 0.02,        // thin plastic shell
         emissive: 0xffe8cc,
-        emissiveIntensity: 0.4, // faint glow from transmitted light
+        emissiveIntensity: 0.8, // warm glow from transmitted light
     });
 
     function addShelfStrip(plankY) {
@@ -650,18 +650,18 @@ function buildShelves(count) {
         housing.position.set(0, plankY - 0.07, 0.35);
         shelfGroup.add(housing);
 
-        // LED strip inside the housing
+        // LED strip recessed inside the housing (above the cover)
         const led = new THREE.Mesh(ledGeo, ledMat);
-        led.position.set(0, plankY - 0.095, 0.35);
+        led.position.set(0, plankY - 0.08, 0.35);
         shelfGroup.add(led);
 
-        // Plastic diffuser cover over the LED
+        // Plastic diffuser cover below the housing
         const cover = new THREE.Mesh(coverGeo, coverMat);
-        cover.position.set(0, plankY - 0.105, 0.35);
+        cover.position.set(0, plankY - 0.115, 0.35);
         shelfGroup.add(cover);
 
         // RectAreaLight for actual illumination pointing down
-        const areaLight = new THREE.RectAreaLight(0xffe8cc, 4.0, stripW, 0.1);
+        const areaLight = new THREE.RectAreaLight(0xffe8cc, 6.0, stripW, 0.1);
         areaLight.position.set(0, plankY - 0.12, 0.35);
         areaLight.lookAt(0, plankY - 2, 0.35);
         shelfGroup.add(areaLight);
