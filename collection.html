@@ -604,28 +604,40 @@ function buildShelves(count) {
     const rows = Math.ceil(count / ALBUMS_PER_ROW);
     const totalW = ALBUMS_PER_ROW * (ALBUM_SIZE + ALBUM_GAP) + ALBUM_GAP;
 
-    // LED strip light fixture — one per shelf, spans the full width
+    // Visible light fixture — a long glowing tube/bar mounted under each shelf
     const stripW = totalW + 0.2;
-    const stripGeo = new THREE.BoxGeometry(stripW, 0.02, 0.06);
-    const stripMatOff = new THREE.MeshStandardMaterial({
-        color: 0x111111, roughness: 0.8, metalness: 0.4,
+
+    // Dark metal housing
+    const housingGeo = new THREE.BoxGeometry(stripW, 0.06, 0.1);
+    const housingMat = new THREE.MeshStandardMaterial({
+        color: 0x333333, roughness: 0.7, metalness: 0.5,
     });
-    // Emissive housing so the strip itself glows faintly
-    const stripMatOn = new THREE.MeshStandardMaterial({
-        color: 0x222222, roughness: 0.6, metalness: 0.3,
-        emissive: 0xffe8cc, emissiveIntensity: 0.3,
+
+    // Glowing light panel (the actual visible "bulb" face)
+    const glowGeo = new THREE.BoxGeometry(stripW - 0.04, 0.03, 0.08);
+    const glowMat = new THREE.MeshStandardMaterial({
+        color: 0xfff5e6,
+        emissive: 0xffe8cc,
+        emissiveIntensity: 1.5,
+        roughness: 0.2,
+        metalness: 0.0,
     });
 
     function addShelfStrip(plankY) {
-        // Visible LED strip housing, mounted flush under the plank front edge
-        const strip = new THREE.Mesh(stripGeo, stripMatOn);
-        strip.position.set(0, plankY - 0.05, 0.25);
-        shelfGroup.add(strip);
+        // Metal housing
+        const housing = new THREE.Mesh(housingGeo, housingMat);
+        housing.position.set(0, plankY - 0.07, 0.35);
+        shelfGroup.add(housing);
 
-        // RectAreaLight — wide, even illumination pointing straight down
-        const areaLight = new THREE.RectAreaLight(0xffe8cc, 3.0, stripW, 0.05);
-        areaLight.position.set(0, plankY - 0.07, 0.25);
-        areaLight.lookAt(0, plankY - 2, 0.25);
+        // Glowing face on the underside of the housing
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.position.set(0, plankY - 0.11, 0.35);
+        shelfGroup.add(glow);
+
+        // RectAreaLight for actual illumination pointing down
+        const areaLight = new THREE.RectAreaLight(0xffe8cc, 4.0, stripW, 0.1);
+        areaLight.position.set(0, plankY - 0.12, 0.35);
+        areaLight.lookAt(0, plankY - 2, 0.35);
         shelfGroup.add(areaLight);
     }
 
