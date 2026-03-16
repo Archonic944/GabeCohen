@@ -1011,13 +1011,11 @@ renderer.domElement.addEventListener('pointermove', e => {
 
 renderer.domElement.addEventListener('pointerdown', e => {
     if (isDetailView) {
-        // In detail view: clicking outside the album closes it
-        // Use raycasting to check if click is on the selected album
-        updatePointer(e);
-        raycaster.setFromCamera(pointer, camera);
-        const detailHits = raycaster.intersectObjects(albumMeshes, true);
-        const hitSelected = detailHits.length > 0 && detailHits[0].object.parent === selectedMesh;
-        if (!hitSelected) closeDetail();
+        // In detail view: clicking outside the center zone closes it
+        const nx = e.clientX / window.innerWidth;
+        const ny = e.clientY / window.innerHeight;
+        const inCenter = nx > 0.35 && nx < 0.65 && ny > 0.2 && ny < 0.8;
+        if (!inCenter) closeDetail();
         return;
     }
     isDragging = true;
