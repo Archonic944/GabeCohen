@@ -208,6 +208,8 @@
 
 <script type="module">
 import * as THREE from 'three';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+RectAreaLightUniformsLib.init();
 
 // ── Config ──────────────────────────────────────────────────────
 const BANDCAMP_USER = 'archonic7';
@@ -494,12 +496,12 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
-// Lights — low ambient + shelf-mounted downlights added in buildShelves
-scene.add(new THREE.AmbientLight(0x998877, 0.6));
+// Lights — warm ambient base + shelf-mounted LED strips added in buildShelves
+scene.add(new THREE.AmbientLight(0x998877, 1.0));
 
-// Gentle directional fill from the front so albums aren't pitch black
-const fillLight = new THREE.DirectionalLight(0xeeddcc, 0.3);
-fillLight.position.set(0, 3, 6);
+// Gentle directional fill from the front
+const fillLight = new THREE.DirectionalLight(0xeeddcc, 0.5);
+fillLight.position.set(0, 4, 6);
 scene.add(fillLight);
 
 // Spotlight that illuminates selected album in detail view (starts off)
@@ -602,31 +604,29 @@ function buildShelves(count) {
     const rows = Math.ceil(count / ALBUMS_PER_ROW);
     const totalW = ALBUMS_PER_ROW * (ALBUM_SIZE + ALBUM_GAP) + ALBUM_GAP;
 
-    // Fixture geometry for downlights (small dark cylinder)
-    const fixtureMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9, metalness: 0.3 });
-    const fixtureGeo = new THREE.CylinderGeometry(0.03, 0.04, 0.04, 8);
+    // LED strip light fixture — one per shelf, spans the full width
+    const stripW = totalW + 0.2;
+    const stripGeo = new THREE.BoxGeometry(stripW, 0.02, 0.06);
+    const stripMatOff = new THREE.MeshStandardMaterial({
+        color: 0x111111, roughness: 0.8, metalness: 0.4,
+    });
+    // Emissive housing so the strip itself glows faintly
+    const stripMatOn = new THREE.MeshStandardMaterial({
+        color: 0x222222, roughness: 0.6, metalness: 0.3,
+        emissive: 0xffe8cc, emissiveIntensity: 0.3,
+    });
 
-    // How many downlights per shelf row
-    const LIGHTS_PER_ROW = 5;
-    const lightSpan = totalW * 0.85;
+    function addShelfStrip(plankY) {
+        // Visible LED strip housing, mounted flush under the plank front edge
+        const strip = new THREE.Mesh(stripGeo, stripMatOn);
+        strip.position.set(0, plankY - 0.05, 0.25);
+        shelfGroup.add(strip);
 
-    function addShelfDownlights(plankY) {
-        // Lights mount under the plank, shining down onto the row below
-        for (let i = 0; i < LIGHTS_PER_ROW; i++) {
-            const lx = (i / (LIGHTS_PER_ROW - 1) - 0.5) * lightSpan;
-            const ly = plankY - 0.06;
-            const lz = 0.15; // slightly in front of shelf back
-
-            // Visible fixture
-            const fixture = new THREE.Mesh(fixtureGeo, fixtureMat);
-            fixture.position.set(lx, ly, lz);
-            shelfGroup.add(fixture);
-
-            // Warm downlight
-            const dl = new THREE.PointLight(0xffe8cc, 0.35, 2.8, 1.8);
-            dl.position.set(lx, ly - 0.02, lz);
-            shelfGroup.add(dl);
-        }
+        // RectAreaLight — wide, even illumination pointing straight down
+        const areaLight = new THREE.RectAreaLight(0xffe8cc, 3.0, stripW, 0.05);
+        areaLight.position.set(0, plankY - 0.07, 0.25);
+        areaLight.lookAt(0, plankY - 2, 0.25);
+        shelfGroup.add(areaLight);
     }
 
     for (let r = 0; r < rows; r++) {
@@ -652,7 +652,7 @@ function buildShelves(count) {
         // Mount downlights under this plank (illuminates the row below)
         // Skip row 0's plank (floor level — nothing below it)
         if (r > 0) {
-            addShelfDownlights(y);
+            addShelfStrip(y);
         }
     }
 
@@ -665,7 +665,7 @@ function buildShelves(count) {
     shelfGroup.add(topPlank);
 
     // Downlights under the top cap too (illuminates top row)
-    addShelfDownlights(rows * ROW_HEIGHT - 0.04);
+    addShelfStrip(rows * ROW_HEIGHT - 0.04);
 
     // Side panels
     const h = rows * ROW_HEIGHT + 0.04;
