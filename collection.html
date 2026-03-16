@@ -674,6 +674,41 @@ phCtx.strokeStyle = '#ff00ff33'; phCtx.lineWidth = 2;
 phCtx.strokeRect(6, 6, 52, 52);
 const placeholderTex = new THREE.CanvasTexture(phCanvas);
 
+// ── Extract key color from album art ────────────────────────────
+const _colorCanvas = document.createElement('canvas');
+const _colorCtx = _colorCanvas.getContext('2d', { willReadFrequently: true });
+
+function extractKeyColor(img) {
+    // Downsample to 16x16 for speed
+    const S = 16;
+    _colorCanvas.width = S;
+    _colorCanvas.height = S;
+    _colorCtx.drawImage(img, 0, 0, S, S);
+    const data = _colorCtx.getImageData(0, 0, S, S).data;
+
+    // Collect pixels, find the most saturated/vibrant color
+    let bestR = 80, bestG = 80, bestB = 80;
+    let bestScore = -1;
+
+    for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const chroma = max - min;
+        const lum = (max + min) / 2;
+        // Score: prefer vivid colors (high chroma) at medium luminance
+        // Avoid near-black, near-white, and very grey pixels
+        const lumPenalty = 1 - Math.abs(lum - 120) / 140;
+        const score = chroma * Math.max(lumPenalty, 0.1);
+        if (score > bestScore) {
+            bestScore = score;
+            bestR = r; bestG = g; bestB = b;
+        }
+    }
+
+    return new THREE.Color(bestR / 255, bestG / 255, bestB / 255);
+}
+
 // ── Create one album mesh ───────────────────────────────────────
 function createAlbumMesh(album, index) {
     const row = Math.floor(index / ALBUMS_PER_ROW);
@@ -741,6 +776,15 @@ function createAlbumMesh(album, index) {
             tex.needsUpdate = true;
             frontMat.map = tex;
             frontMat.needsUpdate = true;
+
+            // Extract key color from artwork
+            const keyColor = extractKeyColor(img);
+            const darkened = keyColor.clone().multiplyScalar(0.35);
+            edgeMat.color.copy(darkened);
+            edgeMat.needsUpdate = true;
+            backMat.color.copy(darkened);
+            backMat.needsUpdate = true;
+            group.userData.keyColor = keyColor;
         };
         img.src = `/img-proxy?url=${encodeURIComponent(album.artUrl)}`;
     }
