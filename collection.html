@@ -497,12 +497,17 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
 // Lights — warm ambient base + shelf-mounted LED strips added in buildShelves
-scene.add(new THREE.AmbientLight(0x998877, 1.0));
+scene.add(new THREE.AmbientLight(0xaa9988, 1.4));
 
-// Gentle directional fill from the front
-const fillLight = new THREE.DirectionalLight(0xeeddcc, 0.5);
+// Directional fill from the front
+const fillLight = new THREE.DirectionalLight(0xeeddcc, 0.7);
 fillLight.position.set(0, 4, 6);
 scene.add(fillLight);
+
+// Secondary fill from below-left to soften shadows
+const fillLight2 = new THREE.DirectionalLight(0xccbbaa, 0.3);
+fillLight2.position.set(-3, -1, 4);
+scene.add(fillLight2);
 
 // Spotlight that illuminates selected album in detail view (starts off)
 const focusLight = new THREE.PointLight(0xffeedd, 0, 5);
@@ -581,23 +586,25 @@ function createWoodTexture(width, height) {
 const woodTex = createWoodTexture(512, 256);
 const woodTexSide = createWoodTexture(256, 512);
 
+// Shelves — lacquered wood (slightly glossy, warm)
 const woodMat = new THREE.MeshStandardMaterial({
     map: woodTex,
-    roughness: 0.75,
-    metalness: 0.05,
+    roughness: 0.45,    // lacquered / varnished
+    metalness: 0.02,
     color: 0xccaa77,
 });
 const woodMatSide = new THREE.MeshStandardMaterial({
     map: woodTexSide,
-    roughness: 0.75,
-    metalness: 0.05,
+    roughness: 0.45,
+    metalness: 0.02,
     color: 0xccaa77,
 });
+// Back panel — raw unfinished wood, darker
 const woodMatBack = new THREE.MeshStandardMaterial({
     map: createWoodTexture(512, 512),
-    roughness: 0.85,
-    metalness: 0.02,
-    color: 0x997755,
+    roughness: 0.92,
+    metalness: 0.0,
+    color: 0x886644,
 });
 
 function buildShelves(count) {
@@ -607,20 +614,22 @@ function buildShelves(count) {
     // Visible light fixture — a long glowing tube/bar mounted under each shelf
     const stripW = totalW + 0.2;
 
-    // Dark metal housing
+    // Brushed aluminum housing
     const housingGeo = new THREE.BoxGeometry(stripW, 0.06, 0.1);
     const housingMat = new THREE.MeshStandardMaterial({
-        color: 0x333333, roughness: 0.7, metalness: 0.5,
+        color: 0x888888, roughness: 0.35, metalness: 0.85,
     });
 
-    // Glowing light panel (the actual visible "bulb" face)
+    // Frosted glass diffuser panel (the glowing part you see)
     const glowGeo = new THREE.BoxGeometry(stripW - 0.04, 0.03, 0.08);
     const glowMat = new THREE.MeshStandardMaterial({
-        color: 0xfff5e6,
+        color: 0xfff8f0,
         emissive: 0xffe8cc,
-        emissiveIntensity: 1.5,
-        roughness: 0.2,
+        emissiveIntensity: 2.0,
+        roughness: 0.15,   // frosted glass
         metalness: 0.0,
+        transparent: true,
+        opacity: 0.92,
     });
 
     function addShelfStrip(plankY) {
@@ -749,32 +758,39 @@ function createAlbumMesh(album, index) {
     // Lean the record backward (into the shelf)
     group.rotation.x = -LEAN_ANGLE;
 
-    // Front face with album art
+    // Album sleeve — a single box with the cover art on the front face
+    // Using a box instead of separate planes eliminates z-fighting
+    const coverSize = ALBUM_SIZE;
+    const sleeveGeo = new THREE.BoxGeometry(coverSize, coverSize, SPINE_WIDTH);
+
+    // Cardboard / matte printed sleeve material
     const frontMat = new THREE.MeshStandardMaterial({
-        map: placeholderTex.clone(), roughness: 0.4, metalness: 0.05,
+        map: placeholderTex.clone(),
+        roughness: 0.55,   // matte printed cardboard
+        metalness: 0.0,
     });
-    const front = new THREE.Mesh(new THREE.PlaneGeometry(ALBUM_SIZE, ALBUM_SIZE), frontMat);
-    front.position.z = SPINE_WIDTH / 2;
-    group.add(front);
+    // Spine & back — worn cardboard look
+    const edgeMat = new THREE.MeshStandardMaterial({
+        color: 0x222222,
+        roughness: 0.85,
+        metalness: 0.0,
+    });
+    const backMat = new THREE.MeshStandardMaterial({
+        color: 0x111111,
+        roughness: 0.9,
+        metalness: 0.0,
+    });
 
-    // Back face
-    const backMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.1 });
-    const back = new THREE.Mesh(new THREE.PlaneGeometry(ALBUM_SIZE, ALBUM_SIZE), backMat);
-    back.rotation.y = Math.PI;
-    back.position.z = -SPINE_WIDTH / 2;
-    group.add(back);
-
-    // Spine / edges (box around the record)
-    const edgeMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7, metalness: 0.1 });
-    const makeEdge = (w, h, d, px, py) => {
-        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), edgeMat);
-        m.position.set(px, py, 0);
-        group.add(m);
-    };
-    makeEdge(ALBUM_SIZE, 0.018, SPINE_WIDTH, 0, ALBUM_SIZE / 2);   // top
-    makeEdge(ALBUM_SIZE, 0.018, SPINE_WIDTH, 0, -ALBUM_SIZE / 2);  // bottom
-    makeEdge(0.018, ALBUM_SIZE, SPINE_WIDTH, -ALBUM_SIZE / 2, 0);  // left
-    makeEdge(0.018, ALBUM_SIZE, SPINE_WIDTH, ALBUM_SIZE / 2, 0);   // right
+    // Box face order: +x, -x, +y, -y, +z (front), -z (back)
+    const sleeve = new THREE.Mesh(sleeveGeo, [
+        edgeMat,   // right edge
+        edgeMat,   // left edge
+        edgeMat,   // top edge
+        edgeMat,   // bottom edge
+        frontMat,  // front — album art
+        backMat,   // back
+    ]);
+    group.add(sleeve);
 
     group.userData = {
         album, index,
@@ -894,7 +910,15 @@ renderer.domElement.addEventListener('pointermove', e => {
 });
 
 renderer.domElement.addEventListener('pointerdown', e => {
-    if (isDetailView) return;
+    if (isDetailView) {
+        // In detail view: clicking outside the center zone closes it
+        // Center zone = middle 50% of screen width, middle 70% of height
+        const nx = e.clientX / window.innerWidth;
+        const ny = e.clientY / window.innerHeight;
+        const inCenter = nx > 0.25 && nx < 0.75 && ny > 0.15 && ny < 0.85;
+        if (!inCenter) closeDetail();
+        return;
+    }
     isDragging = true;
     pointerMoved = false;
     pointerDownTime = Date.now();
@@ -1105,7 +1129,7 @@ function animate() {
         focusLight.position.x += (wp.x - focusLight.position.x) * 2 * dt;
         focusLight.position.y += ((wp.y + 0.5) - focusLight.position.y) * 2 * dt;
         focusLight.position.z += ((wp.z + 1.5) - focusLight.position.z) * 2 * dt;
-        focusLightIntensity = 2.0;
+        focusLightIntensity = 1.0;
         if (selectedMesh.userData.keyColor) {
             const kc = selectedMesh.userData.keyColor;
             focusLight.color.setRGB(0.8 + kc.r * 0.2, 0.8 + kc.g * 0.2, 0.8 + kc.b * 0.2);
