@@ -494,7 +494,7 @@ async function fetchCollection() {
 
 // ── Three.js setup ──────────────────────────────────────────────
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x0a0a12, 0.035);
+scene.fog = new THREE.FogExp2(0x0a0a12, 0.018);
 
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(cameraDefaults.x, cameraDefaults.y, cameraDefaults.z);
@@ -511,21 +511,25 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
 // Lights
-scene.add(new THREE.AmbientLight(0x665544, 0.8));
-const mainLight = new THREE.DirectionalLight(0xffeedd, 0.8);
+scene.add(new THREE.AmbientLight(0x887766, 1.4));
+const mainLight = new THREE.DirectionalLight(0xffeedd, 1.2);
 mainLight.position.set(3, 6, 5);
 mainLight.castShadow = true;
 scene.add(mainLight);
 
-const neonPink = new THREE.PointLight(0xff00ff, 1.5, 18);
+const fillLight = new THREE.DirectionalLight(0xccccdd, 0.5);
+fillLight.position.set(-3, 2, 4);
+scene.add(fillLight);
+
+const neonPink = new THREE.PointLight(0xff00ff, 1.5, 22);
 neonPink.position.set(-6, 4, 4);
 scene.add(neonPink);
 
-const neonCyan = new THREE.PointLight(0x00ffff, 1.5, 18);
+const neonCyan = new THREE.PointLight(0x00ffff, 1.5, 22);
 neonCyan.position.set(6, 1, 5);
 scene.add(neonCyan);
 
-const underglow = new THREE.PointLight(0xffaa55, 0.3, 8);
+const underglow = new THREE.PointLight(0xffaa55, 0.5, 10);
 underglow.position.set(0, -1, 3);
 scene.add(underglow);
 
