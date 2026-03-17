@@ -164,10 +164,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             text-align: center;
-            padding: 40px 24px 80px;
-            background: linear-gradient(180deg, #0a0a12 0%, #0a0a12 60%, transparent 100%);
+            padding: 50px 24px 100px;
+            background: linear-gradient(180deg, #0a0a12 0%, #0a0a12 55%, transparent 100%);
             pointer-events: auto;
             transition: opacity 0.3s ease;
         }
@@ -310,7 +310,7 @@ let pointerMoved = false;
 let pointerScreenX = 0, pointerScreenY = 0; // raw screen coords for tilt
 
 // Camera animation state
-const cameraDefaults = { x: 0, y: 1.8, z: 7, lookY: 1.5 };
+const cameraDefaults = { x: 0, y: 2.6, z: 7, lookY: 0.8 };
 let cameraTarget = { ...cameraDefaults };
 let isDetailView = false;
 
