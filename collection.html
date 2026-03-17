@@ -302,8 +302,8 @@ let albumMeshes = [];
 let hoveredMesh = null;
 let selectedMesh = null;
 let selectedAlbum = null;
-let scrollOffset = -1.5;
-let targetScroll = -1.5;
+let scrollOffset = -0.8;
+let targetScroll = -0.8;
 let isDragging = false;
 let lastPointerY = 0;
 let pointerDownTime = 0;
@@ -1047,7 +1047,7 @@ renderer.domElement.addEventListener('touchend', () => {
     isDragging = false;
 });
 
-const SCROLL_START = -1.5;
+const SCROLL_START = -0.8;
 function clampScroll() {
     const rows = Math.ceil(albums.length / ALBUMS_PER_ROW);
     const max = Math.max(0, (rows - 2) * ROW_HEIGHT);
@@ -1177,7 +1177,7 @@ function animate() {
     // Fade intro: fully visible at SCROLL_START, gone by scrollOffset ~0
     const introEl = document.getElementById('intro');
     const hudEl = document.getElementById('hud');
-    const introFade = Math.max(0, Math.min(1, -scrollOffset / Math.abs(SCROLL_START)));
+    const introFade = Math.max(0, Math.min(1, (scrollOffset - 0) / (SCROLL_START - 0)));
     if (introFade > 0.005) {
         introEl.classList.remove('hidden');
         introEl.style.opacity = introFade;
