@@ -727,7 +727,7 @@ function buildShelves(count) {
     }
 
     for (let r = 0; r < rows; r++) {
-        const y = r * ROW_HEIGHT;
+        const y = -r * ROW_HEIGHT;
 
         // Bottom plank
         const plank = new THREE.Mesh(
@@ -747,8 +747,8 @@ function buildShelves(count) {
         shelfGroup.add(back);
 
         // Mount downlights under this plank (illuminates the row below)
-        // Skip row 0's plank (floor level — nothing below it)
-        if (r > 0) {
+        // Skip the last row's plank (floor level — nothing below it)
+        if (r < rows - 1) {
             addShelfStrip(y);
         }
     }
@@ -758,20 +758,21 @@ function buildShelves(count) {
         new THREE.BoxGeometry(totalW + 0.5, 0.08, SHELF_DEPTH + 0.3),
         woodMat
     );
-    topPlank.position.set(0, rows * ROW_HEIGHT - 0.04, -SHELF_DEPTH * 0.2);
+    topPlank.position.set(0, ROW_HEIGHT - 0.04, -SHELF_DEPTH * 0.2);
     shelfGroup.add(topPlank);
 
     // Downlights under the top cap too (illuminates top row)
-    addShelfStrip(rows * ROW_HEIGHT - 0.04);
+    addShelfStrip(ROW_HEIGHT);
 
     // Side panels
-    const h = rows * ROW_HEIGHT + 0.04;
+    const h = rows * ROW_HEIGHT + 0.08;
+    const sideY = ROW_HEIGHT - h / 2;
     for (const s of [-1, 1]) {
         const p = new THREE.Mesh(
             new THREE.BoxGeometry(0.08, h, SHELF_DEPTH + 0.3),
             woodMatSide
         );
-        p.position.set(s * (totalW / 2 + 0.28), h / 2 - 0.04, -SHELF_DEPTH * 0.2);
+        p.position.set(s * (totalW / 2 + 0.28), sideY, -SHELF_DEPTH * 0.2);
         shelfGroup.add(p);
     }
 }
@@ -826,7 +827,7 @@ function createAlbumMesh(album, index) {
     const col = index % ALBUMS_PER_ROW;
     const totalW = ALBUMS_PER_ROW * (ALBUM_SIZE + ALBUM_GAP);
     const x = col * (ALBUM_SIZE + ALBUM_GAP) - totalW / 2 + ALBUM_SIZE / 2 + ALBUM_GAP / 2;
-    const y = row * ROW_HEIGHT + ALBUM_SIZE / 2 + 0.08;
+    const y = -row * ROW_HEIGHT + ALBUM_SIZE / 2 + 0.08;
 
     const group = new THREE.Group();
     group.position.set(x, y, 0);
@@ -1050,7 +1051,7 @@ renderer.domElement.addEventListener('touchend', () => {
 const SCROLL_START = 0.8;
 function clampScroll() {
     const rows = Math.ceil(albums.length / ALBUMS_PER_ROW);
-    const min = -Math.max(0, (rows - 2) * ROW_HEIGHT);
+    const min = -Math.max(0, (rows - 1) * ROW_HEIGHT);
     targetScroll = Math.max(min, Math.min(targetScroll, SCROLL_START));
 }
 
