@@ -166,8 +166,9 @@
             align-items: center;
             justify-content: flex-start;
             text-align: center;
-            padding: 50px 24px 100px;
-            background: linear-gradient(180deg, #0a0a12 0%, #0a0a12 55%, transparent 100%);
+            padding: 40px 24px 0;
+            bottom: auto;
+            background: linear-gradient(180deg, #0a0a12 0%, #0a0a12 70%, transparent 100%);
             pointer-events: auto;
             transition: opacity 0.3s ease;
         }
@@ -301,8 +302,8 @@ let albumMeshes = [];
 let hoveredMesh = null;
 let selectedMesh = null;
 let selectedAlbum = null;
-let scrollOffset = 0;
-let targetScroll = 0;
+let scrollOffset = -1.5;
+let targetScroll = -1.5;
 let isDragging = false;
 let lastPointerY = 0;
 let pointerDownTime = 0;
@@ -310,7 +311,7 @@ let pointerMoved = false;
 let pointerScreenX = 0, pointerScreenY = 0; // raw screen coords for tilt
 
 // Camera animation state
-const cameraDefaults = { x: 0, y: 2.6, z: 7, lookY: 0.8 };
+const cameraDefaults = { x: 0, y: 1.8, z: 7, lookY: 1.5 };
 let cameraTarget = { ...cameraDefaults };
 let isDetailView = false;
 
@@ -1046,10 +1047,11 @@ renderer.domElement.addEventListener('touchend', () => {
     isDragging = false;
 });
 
+const SCROLL_START = -1.5;
 function clampScroll() {
     const rows = Math.ceil(albums.length / ALBUMS_PER_ROW);
     const max = Math.max(0, (rows - 2) * ROW_HEIGHT);
-    targetScroll = Math.max(-0.5, Math.min(targetScroll, max));
+    targetScroll = Math.max(SCROLL_START, Math.min(targetScroll, max));
 }
 
 // ── Detail view (bring record to camera) ────────────────────────
@@ -1172,16 +1174,17 @@ function animate() {
         shelfGroup.position.y = -scrollOffset + 0.5;
     }
 
-    // Fade intro out as user scrolls down; show HUD when intro is gone
+    // Fade intro: fully visible at SCROLL_START, gone by scrollOffset ~0
     const introEl = document.getElementById('intro');
     const hudEl = document.getElementById('hud');
-    const introFade = 1 - Math.min(1, scrollOffset / 1.5);
-    if (introFade > 0.01) {
+    const introFade = Math.max(0, Math.min(1, -scrollOffset / Math.abs(SCROLL_START)));
+    if (introFade > 0.005) {
         introEl.classList.remove('hidden');
         introEl.style.opacity = introFade;
-        hudEl.style.opacity = 0;
+        hudEl.style.opacity = 1 - introFade;
     } else {
         introEl.classList.add('hidden');
+        introEl.style.opacity = 0;
         hudEl.style.opacity = 1;
     }
 
