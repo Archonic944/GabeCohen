@@ -302,8 +302,8 @@ let albumMeshes = [];
 let hoveredMesh = null;
 let selectedMesh = null;
 let selectedAlbum = null;
-let scrollOffset = -0.8;
-let targetScroll = -0.8;
+let scrollOffset = 0.8;
+let targetScroll = 0.8;
 let isDragging = false;
 let lastPointerY = 0;
 let pointerDownTime = 0;
@@ -939,7 +939,7 @@ renderer.domElement.addEventListener('pointermove', e => {
     if (isDragging && !isDetailView) {
         pointerMoved = true;
         const dy = e.clientY - lastPointerY;
-        targetScroll -= dy * 0.012;
+        targetScroll += dy * 0.012;
         lastPointerY = e.clientY;
     }
 
@@ -1017,7 +1017,7 @@ window.addEventListener('pointerup', e => {
 function onWheel(e) {
     if (isDetailView) return;
     e.preventDefault();
-    targetScroll += e.deltaY * 0.004;
+    targetScroll -= e.deltaY * 0.004;
 }
 renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
 document.getElementById('intro').addEventListener('wheel', onWheel, { passive: false });
@@ -1038,7 +1038,7 @@ renderer.domElement.addEventListener('touchmove', e => {
     if (isDragging && e.touches.length === 1) {
         pointerMoved = true;
         const dy = e.touches[0].clientY - lastPointerY;
-        targetScroll -= dy * 0.012;
+        targetScroll += dy * 0.012;
         lastPointerY = e.touches[0].clientY;
     }
 }, { passive: true });
@@ -1047,11 +1047,11 @@ renderer.domElement.addEventListener('touchend', () => {
     isDragging = false;
 });
 
-const SCROLL_START = -0.8;
+const SCROLL_START = 0.8;
 function clampScroll() {
     const rows = Math.ceil(albums.length / ALBUMS_PER_ROW);
-    const max = Math.max(0, (rows - 2) * ROW_HEIGHT);
-    targetScroll = Math.max(SCROLL_START, Math.min(targetScroll, max));
+    const min = -Math.max(0, (rows - 2) * ROW_HEIGHT);
+    targetScroll = Math.max(min, Math.min(targetScroll, SCROLL_START));
 }
 
 // ── Detail view (bring record to camera) ────────────────────────
