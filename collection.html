@@ -45,6 +45,7 @@
             align-items: center;
             background: linear-gradient(180deg, rgba(10,10,18,0.95) 0%, transparent 100%);
             pointer-events: none;
+            transition: opacity 0.3s ease;
         }
         #hud * { pointer-events: auto; }
         #hud h1 {
@@ -155,28 +156,36 @@
         #tooltip .tt-title { color: #fff; font-family: Born2bSportyV2, monospace; letter-spacing: 1px; }
         #tooltip .tt-artist { color: #00ffcc; font-size: 0.9em; margin-top: 2px; }
 
-        /* Intro hero section — shown when scrolled above the shelf */
+        /* Intro overlay — top portion with text, shelf peeks below */
         #intro {
             position: fixed;
             z-index: 5;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0; left: 0; right: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 60px 24px;
-            background: #0a0a12;
-            transition: opacity 0.4s ease;
+            padding: 40px 24px 80px;
+            background: linear-gradient(180deg, #0a0a12 0%, #0a0a12 60%, transparent 100%);
             pointer-events: auto;
+            transition: opacity 0.3s ease;
         }
         #intro.hidden {
             opacity: 0;
             pointer-events: none;
         }
+        #intro h1 {
+            font-family: Born2bSportyV2, monospace;
+            font-size: 2.4em;
+            letter-spacing: 4px;
+            color: #e0d8cc;
+            text-shadow: 0 0 12px rgba(255,200,150,0.3);
+            margin-bottom: 20px;
+        }
         #intro p {
-            max-width: 520px;
-            font-size: 1.05em;
+            max-width: 560px;
+            font-size: 1.25em;
             line-height: 1.7;
             color: #c8c0b4;
             margin-bottom: 28px;
@@ -191,7 +200,7 @@
             display: inline-block;
             color: #00ffcc;
             font-family: BattleNet, monospace;
-            font-size: 0.95em;
+            font-size: 1em;
             text-decoration: none;
             border: 1px solid #00ffcc44;
             padding: 8px 24px;
@@ -212,6 +221,7 @@
 <body>
 
 <div id="intro">
+    <h1>RECORD COLLECTION</h1>
     <p>These are some of the albums/songs that Gabe owns on <a class="inline-link" href="https://bandcamp.com/archonic7" target="_blank" rel="noopener">Bandcamp</a>. Scroll to explore, and click on any one of them to see details.</p>
     <a class="back-btn" href="index.html">&larr; Back to main site</a>
 </div>
@@ -291,8 +301,8 @@ let albumMeshes = [];
 let hoveredMesh = null;
 let selectedMesh = null;
 let selectedAlbum = null;
-let scrollOffset = -3.0;
-let targetScroll = -3.0;
+let scrollOffset = 0;
+let targetScroll = 0;
 let isDragging = false;
 let lastPointerY = 0;
 let pointerDownTime = 0;
@@ -1036,11 +1046,10 @@ renderer.domElement.addEventListener('touchend', () => {
     isDragging = false;
 });
 
-const INTRO_SCROLL = -3.0; // scroll headroom above shelf for intro
 function clampScroll() {
     const rows = Math.ceil(albums.length / ALBUMS_PER_ROW);
     const max = Math.max(0, (rows - 2) * ROW_HEIGHT);
-    targetScroll = Math.max(INTRO_SCROLL, Math.min(targetScroll, max));
+    targetScroll = Math.max(-0.5, Math.min(targetScroll, max));
 }
 
 // ── Detail view (bring record to camera) ────────────────────────
@@ -1163,13 +1172,17 @@ function animate() {
         shelfGroup.position.y = -scrollOffset + 0.5;
     }
 
-    // Show/hide intro based on scroll position
+    // Fade intro out as user scrolls down; show HUD when intro is gone
     const introEl = document.getElementById('intro');
-    if (scrollOffset < -0.8) {
+    const hudEl = document.getElementById('hud');
+    const introFade = 1 - Math.min(1, scrollOffset / 1.5);
+    if (introFade > 0.01) {
         introEl.classList.remove('hidden');
-        introEl.style.opacity = Math.min(1, (-scrollOffset - 0.8) / 1.0);
+        introEl.style.opacity = introFade;
+        hudEl.style.opacity = 0;
     } else {
         introEl.classList.add('hidden');
+        hudEl.style.opacity = 1;
     }
 
     // Animate albums
