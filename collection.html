@@ -213,9 +213,25 @@
         #intro .back-btn:hover { background: #00ffcc22; border-color: #00ffcc; }
 
         @media (max-width: 600px) {
-            #hud h1 { font-size: 1.1em; }
+            #hud { padding: 8px 12px; }
+            #hud h1 { font-size: 1em; letter-spacing: 1px; }
+            #hud a { font-size: 0.75em; padding: 3px 8px; }
+
+            #intro { padding: 24px 16px 0; }
+            #intro h1 { font-size: 1.6em; letter-spacing: 2px; margin-bottom: 12px; }
+            #intro p { font-size: 0.85em; line-height: 1.5; margin-bottom: 18px; }
+            #intro .back-btn { font-size: 0.85em; padding: 6px 16px; }
+
+            #detail-info { padding: 14px 14px; }
             #detail-title { font-size: 1.1em; }
-            #intro p { font-size: 0.95em; }
+            #detail-artist { font-size: 0.85em; }
+            #detail-embed-wrap iframe { height: 100px; }
+            #detail-actions { gap: 8px; }
+            #detail-link, #detail-back { font-size: 0.75em; padding: 5px 10px; }
+
+            #info-bar { font-size: 0.65em; padding: 6px 12px; }
+
+            #tooltip { display: none !important; }
         }
     </style>
 </head>
@@ -277,7 +293,8 @@ RectAreaLightUniformsLib.init();
 
 // ── Config ──────────────────────────────────────────────────────
 const BANDCAMP_USER = 'archonic7';
-const ALBUMS_PER_ROW = 6;
+const isMobile = window.innerWidth <= 600;
+const ALBUMS_PER_ROW = isMobile ? 3 : 6;
 const ALBUM_SIZE = 1.5;
 const ALBUM_GAP = 0.25;
 const SHELF_DEPTH = 1.2;
@@ -285,7 +302,7 @@ const ROW_HEIGHT = 2.2;
 const SPINE_WIDTH = 0.10;
 const LEAN_ANGLE = 0.18; // radians - how much records lean back
 const HOVER_PULL = 0.35; // slight pull on hover
-const FULL_PULL = 2.5;   // full pull-out on click (brings to camera)
+const FULL_PULL = isMobile ? 2.0 : 2.5;   // full pull-out on click (brings to camera)
 
 // CORS proxies to try in order (for GET requests)
 const PROXIES = [
@@ -311,7 +328,7 @@ let pointerMoved = false;
 let pointerScreenX = 0, pointerScreenY = 0; // raw screen coords for tilt
 
 // Camera animation state
-const cameraDefaults = { x: 0, y: 1.8, z: 7, lookY: 1.5 };
+const cameraDefaults = { x: 0, y: 1.8, z: isMobile ? 5.5 : 7, lookY: 1.5 };
 let cameraTarget = { ...cameraDefaults };
 let isDetailView = false;
 
@@ -993,7 +1010,9 @@ renderer.domElement.addEventListener('pointerdown', e => {
         // In detail view: clicking outside the center zone closes it
         const nx = e.clientX / window.innerWidth;
         const ny = e.clientY / window.innerHeight;
-        const inCenter = nx > 0.35 && nx < 0.65 && ny > 0.2 && ny < 0.8;
+        const inCenter = isMobile
+            ? (nx > 0.15 && nx < 0.85 && ny > 0.1 && ny < 0.6)
+            : (nx > 0.35 && nx < 0.65 && ny > 0.2 && ny < 0.8);
         if (!inCenter) closeDetail();
         return;
     }
@@ -1023,18 +1042,20 @@ function onWheel(e) {
 renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
 document.getElementById('intro').addEventListener('wheel', onWheel, { passive: false });
 
-// Touch scroll
-renderer.domElement.addEventListener('touchstart', e => {
+// Touch scroll — shared handlers for canvas and intro overlay
+function onTouchStart(e) {
     if (isDetailView) return;
     if (e.touches.length === 1) {
         isDragging = true;
         pointerMoved = false;
         pointerDownTime = Date.now();
         lastPointerY = e.touches[0].clientY;
+        // Store touch position for tap-to-select raycasting
+        pointer.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
+        pointer.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
     }
-}, { passive: true });
-
-renderer.domElement.addEventListener('touchmove', e => {
+}
+function onTouchMove(e) {
     if (isDetailView) return;
     if (isDragging && e.touches.length === 1) {
         pointerMoved = true;
@@ -1042,11 +1063,25 @@ renderer.domElement.addEventListener('touchmove', e => {
         targetScroll += dy * 0.012;
         lastPointerY = e.touches[0].clientY;
     }
-}, { passive: true });
-
-renderer.domElement.addEventListener('touchend', () => {
+}
+function onTouchEnd() {
+    const elapsed = Date.now() - pointerDownTime;
+    if (isDragging && !pointerMoved && elapsed < 300 && !isDetailView) {
+        const hit = getHoveredAlbum();
+        if (hit) openDetail(hit);
+    }
     isDragging = false;
-});
+}
+
+renderer.domElement.addEventListener('touchstart', onTouchStart, { passive: true });
+renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: true });
+renderer.domElement.addEventListener('touchend', onTouchEnd);
+
+// Let touch gestures on the intro overlay also scroll the shelf
+const introEl_ = document.getElementById('intro');
+introEl_.addEventListener('touchstart', onTouchStart, { passive: true });
+introEl_.addEventListener('touchmove', onTouchMove, { passive: true });
+introEl_.addEventListener('touchend', onTouchEnd);
 
 const SCROLL_START = 0.8;
 function clampScroll() {
@@ -1078,7 +1113,7 @@ function openDetail(mesh) {
     cameraTarget = {
         x: worldPos.x,
         y: worldPos.y,
-        z: targetWorldZ + 2.8,
+        z: targetWorldZ + (isMobile ? 2.2 : 2.8),
         lookY: worldPos.y,
     };
 
@@ -1134,7 +1169,7 @@ window.addEventListener('keydown', e => { if (e.key === 'Escape' && isDetailView
 
 // ── Background particles ────────────────────────────────────────
 function createParticles() {
-    const n = 150;
+    const n = isMobile ? 60 : 150;
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
