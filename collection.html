@@ -285,11 +285,6 @@ const LEAN_ANGLE = 0.18; // radians - how much records lean back
 const HOVER_PULL = 0.35; // slight pull on hover
 const FULL_PULL = 2.5;   // full pull-out on click (brings to camera)
 
-// CORS proxies to try in order (for GET requests)
-const PROXIES = [
-    url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-];
 
 // ── State ───────────────────────────────────────────────────────
 let albums = [];
@@ -325,16 +320,11 @@ const albumCountEl = document.getElementById('album-count');
 
 // ── Proxy fetch helper ──────────────────────────────────────────
 async function proxyFetch(url) {
-    for (const mkProxy of PROXIES) {
-        try {
-            const resp = await fetch(mkProxy(url), { signal: AbortSignal.timeout(12000) });
-            if (!resp.ok) continue;
-            const text = await resp.text();
-            if (text.length < 100) continue;
-            return text;
-        } catch { /* try next */ }
-    }
-    throw new Error('All proxies failed');
+    const resp = await fetch(`/bandcamp-proxy?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(12000) });
+    if (!resp.ok) throw new Error(`Relay returned ${resp.status}`);
+    const text = await resp.text();
+    if (text.length < 100) throw new Error('Relay returned empty response');
+    return text;
 }
 
 // ── Art URL builder ─────────────────────────────────────────────
