@@ -15,6 +15,49 @@
             src: url("assets/Born2bSportyV2.ttf") format("truetype");
         }
 
+        .info-box {
+            text-align: center;
+            margin: 0.5em 20%;
+            padding: 0.2em;
+            border-radius: 5px;
+            border: 4px solid dimgray;
+            background: linear-gradient(90deg, #a6a6a6, lightgray, #a6a6a6);
+            color: black;
+            font-size: 1.4em;
+        }
+
+        nav {
+            font-size: 1.2em;
+        }
+
+        #spanish {
+            display: none;
+        }
+
+        #spanish:target {
+            display: block;
+        }
+
+        #language-picker {
+            color: gray;
+        }
+
+        #language-picker a {
+            color: inherit;
+        }
+
+        body:has(#spanish:target) #spanish-button {
+            color: yellow;
+        }
+
+        body:not(:has(#spanish:target)) #english-button {
+            color: yellow;
+        }
+
+        body:has(#spanish:target) #english {
+            display: none;
+        }
+
         html, body {
             background-color: #182222;
             color: white;
@@ -185,75 +228,153 @@
         <h1>Hello.</h1>
         <h2>I'm <strong>Gabe Cohen</strong>, a software developer and musician.</h2>
         <h3>Online friends may know me as archonic.</h3>
+        <nav id="language-picker">
+            <a href="#english" id="english-button">english</a> • <a href="#spanish" id="spanish-button">español</a>
+        </nav>
     </div>
 
-    <div class="header-series">
-        <h1>Contact</h1>
-        <div class="second-level">
-            <p>If you have an interesting project for me, or just want to chat, feel free to reach me via email:<br><strong>gabrielc[1000+800+90] at gmail</strong><br>Yes, you'll have to do math (because the scrapers don't bother to).</p>
-        </div>
-        <h1>Links</h1>
-        <div class="second-level">
-            <ul>
-                <li>GitHub: <a href="https://github.com/Archonic944">https://github.com/Archonic944</a></li>
-                <li>itch.io: <a href="https://archonic.itch.io/">https://archonic.itch.io/</a></li>
-                <li>YouTube: <a href="https://www.youtube.com/@archonicmakes">https://www.youtube.com/@archonicmakes</a></li>
-            </ul>
-        </div>
-        <h1>Coding</h1>
-        <div class="second-level">
-            <p>I'm a software developer with experience in a variety of languages and frameworks, including Java, C#, and Javascript / Typescript. I enjoy building web applications, games, and tools that solve real-world problems.</p>
-            <h2>Projects</h2>
+
+    <div id="english">
+        <div class="header-series">
+            <h1>Contact</h1>
+            <div class="second-level">
+                <p>If you have an interesting project for me, or just want to chat, feel free to reach me via email:<br><strong>gabrielc[1000+800+90] at gmail</strong><br>Yes, you'll have to do math (because the scrapers don't bother to).</p>
+            </div>
+            <h1>Links</h1>
             <div class="second-level">
                 <ul>
-                    <li><a href="https://midigym.com">midigym</a>: web based chord typing test</li>
-                    <li><a href="https://github.com/Archonic944/csc223/blob/main/presentations/expression_parser.md">pmdas.asm</a>: a mathematical expression parser in 8080 assembly</li>
-                    <li><a href="https://archonic.itch.io/cell">CELL-027</a>: a video game for the PICO-8 system</li>
-                    <li><a href="https://github.com/Archonic944/ShrinkENG">ShrinkENG</a>: english language bytecode generation</li>
-                    <li><a href="https://wordlefortwo.com">Wordle For Two</a>: pass 'n play two player wordle</li>
+                    <li>GitHub: <a href="https://github.com/Archonic944">https://github.com/Archonic944</a></li>
+                    <li>itch.io: <a href="https://archonic.itch.io/">https://archonic.itch.io/</a></li>
+                    <li>YouTube: <a href="https://www.youtube.com/@archonicmakes">https://www.youtube.com/@archonicmakes</a></li>
                 </ul>
+            </div>
+            <h1>Coding</h1>
+            <div class="second-level">
+                <p>I'm a software developer with experience in a variety of languages and frameworks, including Java, C#, and Javascript / Typescript. I enjoy building web applications, games, and tools that solve real-world problems.</p>
+                <h2>Projects</h2>
+                <div class="second-level">
+                    <ul>
+                        <li><a href="https://midigym.com">midigym</a>: web based chord typing test</li>
+                        <li><a href="https://github.com/Archonic944/csc223/blob/main/presentations/expression_parser.md">pmdas.asm</a>: a mathematical expression parser in 8080 assembly</li>
+                        <li><a href="https://archonic.itch.io/cell">CELL-027</a>: a video game for the PICO-8 system</li>
+                        <li><a href="https://github.com/Archonic944/ShrinkENG">ShrinkENG</a>: english language bytecode generation</li>
+                        <li><a href="https://wordlefortwo.com">Wordle For Two</a>: pass 'n play two player wordle</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h1>Music</h1>
+            <div class="second-level">
+                <p>I play the piano and have created 40+ original songs. Some of which I have even been paid for!</p>
+                <h2>Songs I Made That I Am Particularly Proud Of</h2>
+                <div class="second-level">
+                    <ul>
+                        <li><a href="https://www.youtube.com/watch?v=sN05iqBNDvA">Title Theme - Borderline OST</a> <audio src="assets/audio/Borderline Title Screen.webm" controls aria-label="Title Theme - Borderline OST"></audio></li>
+                        <li><a href="https://www.youtube.com/watch?v=VHIaLgRQMZ4">Cracked Porcelain - Battle Theme</a> <audio src="assets/audio/cracked porcelain.webm" controls aria-label="Cracked Porcelain - Battle Theme"></audio></li>
+                        <li><a href="https://www.youtube.com/watch?v=nrZ6xZ2UvaY">Free Mind</a> <audio src="assets/audio/free mind.webm" controls aria-label="Free Mind"></audio></li>
+                        <li><a href="https://www.youtube.com/watch?v=_x3HZHnrNYc">Sunbeam Rave</a> <audio src="assets/audio/sunbeam rave.webm" controls aria-label="Sunbeam Rave"></audio></li>
+                    </ul>
+                </div>
+
+                <video autoplay controls muted loop playsinline src="assets/video/IMG_PIANO.webm" aria-label="Gabe playing piano"></video>
+                <p class="video-caption">Me playing a segment of For Lovers (by Lamp), +bonus mistakes &amp; noodling at the end.
+                    <br>PS: WebM compression got this video from 90mb to 3mb! Very cool.
+                </p>
+                <h2>My Bandcamp Collection</h2> <img src="assets/bandcamp-logotype-color-512.png" style="display: inline-block; width: 10rem; background-color: white;">
+                <div class="second-level">
+
+                    <p><a href=https://bandcamp.com>Bandcamp</a> is a website that allows you to purchase digital music
+                        and physical merchandise directly from artists. Any album or song you purchase goes into your
+                        "collection". It's a great way to support artists you love and gives you a sense of ownership.</p>
+                    <p>I own quite a few albums on Bandcamp. Here's a visualizer I made with Three.js to show them off!</p>
+                    <button class="button-rounded" onclick="window.open('/collection', '_blank')">GO TO VISUALIZER ==></button>
+                </div>
             </div>
         </div>
 
-        <h1>Music</h1>
-        <div class="second-level">
-            <p>I play the piano and have created 40+ original songs. Some of which I have even been paid for!</p>
-            <h2>Songs I Made That I Am Particularly Proud Of</h2>
-            <div class="second-level">
-                <ul>
-                    <li><a href="https://www.youtube.com/watch?v=sN05iqBNDvA">Title Theme - Borderline OST</a> <audio src="assets/audio/Borderline Title Screen.webm" controls aria-label="Title Theme - Borderline OST"></audio></li>
-                    <li><a href="https://www.youtube.com/watch?v=VHIaLgRQMZ4">Cracked Porcelain - Battle Theme</a> <audio src="assets/audio/cracked porcelain.webm" controls aria-label="Cracked Porcelain - Battle Theme"></audio></li>
-                    <li><a href="https://www.youtube.com/watch?v=nrZ6xZ2UvaY">Free Mind</a> <audio src="assets/audio/free mind.webm" controls aria-label="Free Mind"></audio></li>
-                    <li><a href="https://www.youtube.com/watch?v=_x3HZHnrNYc">Sunbeam Rave</a> <audio src="assets/audio/sunbeam rave.webm" controls aria-label="Sunbeam Rave"></audio></li>
-                </ul>
-            </div>
-
-            <video autoplay controls muted loop playsinline src="assets/video/IMG_PIANO.webm" aria-label="Gabe playing piano"></video>
-            <p class="video-caption">Me playing a segment of For Lovers (by Lamp), +bonus mistakes &amp; noodling at the end.
-                <br>PS: WebM compression got this video from 90mb to 3mb! Very cool.
-            </p>
-            <h2>My Bandcamp Collection</h2> <img src="assets/bandcamp-logotype-color-512.png" style="display: inline-block; width: 10rem; background-color: white;">
-            <div class="second-level">
-                
-                <p><a href=https://bandcamp.com>Bandcamp</a> is a website that allows you to purchase digital music
-                    and physical merchandise directly from artists. Any album or song you purchase goes into your
-                    "collection". It's a great way to support artists you love and gives you a sense of ownership.</p>
-                <p>I own quite a few albums on Bandcamp. Here's a visualizer I made with Three.js to show them off!</p>
-                <button class="button-rounded" onclick="window.open('/collection', '_blank')">GO TO VISUALIZER ==></button>
-            </div>
+        <div id="badges" aria-label="Web badges">
+            <img src="https://hellnet.work/8831/img/buttons/abbasbaloch_home_browser.gif" alt="browser badge">
+            <img src="https://hellnet.work/8831/img/buttons/abboudgh_e3.gif" alt="E3 badge">
+            <img src="https://hellnet.work/8831/img/buttons/claymatecarly_calvin.gif" alt="Calvin badge">
+            <img src="https://hellnet.work/8831/img/buttons/claymatecarly_hobbes.gif" alt="Hobbes badge">
+            <img src="https://hellnet.work/8831/img/buttons/celenecasati_cele.jpg" alt="cele badge">
+            <img src="https://hellnet.work/8831/img/buttons/certified_teacher_resources_images_easybib.gif" alt="EasyBib badge">
+            <img src="https://hellnet.work/8831/img/buttons/Colosseum_Stands_2532_bestviewed.gif" alt="best viewed badge">
+            <img src="https://hellnet.work/8831/img/buttons/ResearchTriangle_Lab_5400_ff7_freedisk_button_anim.gif" alt="free disk badge">
+            <img src="https://hellnet.work/8831/img/buttons/au.geocities.com_atomicmpc_images_spacelink.gif" alt="spacelink badge">
         </div>
     </div>
 
-    <div id="badges" aria-label="Web badges">
-        <img src="https://hellnet.work/8831/img/buttons/abbasbaloch_home_browser.gif" alt="browser badge">
-        <img src="https://hellnet.work/8831/img/buttons/abboudgh_e3.gif" alt="E3 badge">
-        <img src="https://hellnet.work/8831/img/buttons/claymatecarly_calvin.gif" alt="Calvin badge">
-        <img src="https://hellnet.work/8831/img/buttons/claymatecarly_hobbes.gif" alt="Hobbes badge">
-        <img src="https://hellnet.work/8831/img/buttons/celenecasati_cele.jpg" alt="cele badge">
-        <img src="https://hellnet.work/8831/img/buttons/certified_teacher_resources_images_easybib.gif" alt="EasyBib badge">
-        <img src="https://hellnet.work/8831/img/buttons/Colosseum_Stands_2532_bestviewed.gif" alt="best viewed badge">
-        <img src="https://hellnet.work/8831/img/buttons/ResearchTriangle_Lab_5400_ff7_freedisk_button_anim.gif" alt="free disk badge">
-        <img src="https://hellnet.work/8831/img/buttons/au.geocities.com_atomicmpc_images_spacelink.gif" alt="spacelink badge">
+    <div id="spanish">
+        <div class="info-box">hola</div>
+        <div class="header-series">
+            <h1>Contact</h1>
+            <div class="second-level">
+                <p>If you have an interesting project for me, or just want to chat, feel free to reach me via email:<br><strong>gabrielc[1000+800+90] at gmail</strong><br>Yes, you'll have to do math (because the scrapers don't bother to).</p>
+            </div>
+            <h1>Links</h1>
+            <div class="second-level">
+                <ul>
+                    <li>GitHub: <a href="https://github.com/Archonic944">https://github.com/Archonic944</a></li>
+                    <li>itch.io: <a href="https://archonic.itch.io/">https://archonic.itch.io/</a></li>
+                    <li>YouTube: <a href="https://www.youtube.com/@archonicmakes">https://www.youtube.com/@archonicmakes</a></li>
+                </ul>
+            </div>
+            <h1>Coding</h1>
+            <div class="second-level">
+                <p>I'm a software developer with experience in a variety of languages and frameworks, including Java, C#, and Javascript / Typescript. I enjoy building web applications, games, and tools that solve real-world problems.</p>
+                <h2>Projects</h2>
+                <div class="second-level">
+                    <ul>
+                        <li><a href="https://midigym.com">midigym</a>: web based chord typing test</li>
+                        <li><a href="https://github.com/Archonic944/csc223/blob/main/presentations/expression_parser.md">pmdas.asm</a>: a mathematical expression parser in 8080 assembly</li>
+                        <li><a href="https://archonic.itch.io/cell">CELL-027</a>: a video game for the PICO-8 system</li>
+                        <li><a href="https://github.com/Archonic944/ShrinkENG">ShrinkENG</a>: english language bytecode generation</li>
+                        <li><a href="https://wordlefortwo.com">Wordle For Two</a>: pass 'n play two player wordle</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h1>Music</h1>
+            <div class="second-level">
+                <p>I play the piano and have created 40+ original songs. Some of which I have even been paid for!</p>
+                <h2>Songs I Made That I Am Particularly Proud Of</h2>
+                <div class="second-level">
+                    <ul>
+                        <li><a href="https://www.youtube.com/watch?v=sN05iqBNDvA">Title Theme - Borderline OST</a> <audio src="assets/audio/Borderline Title Screen.webm" controls aria-label="Title Theme - Borderline OST"></audio></li>
+                        <li><a href="https://www.youtube.com/watch?v=VHIaLgRQMZ4">Cracked Porcelain - Battle Theme</a> <audio src="assets/audio/cracked porcelain.webm" controls aria-label="Cracked Porcelain - Battle Theme"></audio></li>
+                        <li><a href="https://www.youtube.com/watch?v=nrZ6xZ2UvaY">Free Mind</a> <audio src="assets/audio/free mind.webm" controls aria-label="Free Mind"></audio></li>
+                        <li><a href="https://www.youtube.com/watch?v=_x3HZHnrNYc">Sunbeam Rave</a> <audio src="assets/audio/sunbeam rave.webm" controls aria-label="Sunbeam Rave"></audio></li>
+                    </ul>
+                </div>
+
+                <video autoplay controls muted loop playsinline src="assets/video/IMG_PIANO.webm" aria-label="Gabe playing piano"></video>
+                <p class="video-caption">Me playing a segment of For Lovers (by Lamp), +bonus mistakes &amp; noodling at the end.
+                    <br>PS: WebM compression got this video from 90mb to 3mb! Very cool.
+                </p>
+                <h2>My Bandcamp Collection</h2> <img src="assets/bandcamp-logotype-color-512.png" style="display: inline-block; width: 10rem; background-color: white;">
+                <div class="second-level">
+
+                    <p><a href=https://bandcamp.com>Bandcamp</a> is a website that allows you to purchase digital music
+                        and physical merchandise directly from artists. Any album or song you purchase goes into your
+                        "collection". It's a great way to support artists you love and gives you a sense of ownership.</p>
+                    <p>I own quite a few albums on Bandcamp. Here's a visualizer I made with Three.js to show them off!</p>
+                    <button class="button-rounded" onclick="window.open('/collection', '_blank')">GO TO VISUALIZER ==></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="badges" aria-label="Web badges">
+            <img src="https://hellnet.work/8831/img/buttons/abbasbaloch_home_browser.gif" alt="browser badge">
+            <img src="https://hellnet.work/8831/img/buttons/abboudgh_e3.gif" alt="E3 badge">
+            <img src="https://hellnet.work/8831/img/buttons/claymatecarly_calvin.gif" alt="Calvin badge">
+            <img src="https://hellnet.work/8831/img/buttons/claymatecarly_hobbes.gif" alt="Hobbes badge">
+            <img src="https://hellnet.work/8831/img/buttons/celenecasati_cele.jpg" alt="cele badge">
+            <img src="https://hellnet.work/8831/img/buttons/certified_teacher_resources_images_easybib.gif" alt="EasyBib badge">
+            <img src="https://hellnet.work/8831/img/buttons/Colosseum_Stands_2532_bestviewed.gif" alt="best viewed badge">
+            <img src="https://hellnet.work/8831/img/buttons/ResearchTriangle_Lab_5400_ff7_freedisk_button_anim.gif" alt="free disk badge">
+            <img src="https://hellnet.work/8831/img/buttons/au.geocities.com_atomicmpc_images_spacelink.gif" alt="spacelink badge">
+        </div>
     </div>
 </body>
 </html>
